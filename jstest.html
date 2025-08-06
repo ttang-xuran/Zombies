@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JS Test</title>
+    <style>
+        body { background: #000; color: white; font-size: 20px; text-align: center; padding: 50px; }
+        canvas { border: 2px solid white; margin: 20px; }
+    </style>
+</head>
+<body>
+    <h1>JavaScript Test</h1>
+    <div id="status">JavaScript is NOT working</div>
+    <canvas id="canvas" width="400" height="300"></canvas>
+    <div id="log"></div>
+    
+    <script>
+        // Test 1: Basic JavaScript
+        document.getElementById('status').innerHTML = 'JavaScript IS working!';
+        document.getElementById('status').style.color = 'green';
+        
+        // Test 2: Canvas
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Fill with blue
+        ctx.fillStyle = 'blue';
+        ctx.fillRect(0, 0, 400, 300);
+        
+        // Draw white text
+        ctx.fillStyle = 'white';
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('CANVAS WORKS!', 200, 150);
+        
+        // Test 3: Animation
+        let x = 0;
+        function animate() {
+            ctx.fillStyle = 'red';
+            ctx.fillRect(x, 50, 20, 20);
+            x += 2;
+            if (x < 400) {
+                requestAnimationFrame(animate);
+            }
+        }
+        animate();
+        
+        // Log success
+        document.getElementById('log').innerHTML = 'All tests passed!';
+        document.getElementById('log').style.color = 'green';
+    </script>
+</body>
+</html>

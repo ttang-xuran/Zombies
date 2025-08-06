@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raccoon City Outbreak - Zombie Survival Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 100%);
+            color: #00ff00;
+            font-family: 'Arial', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        .container {
+            text-align: center;
+            max-width: 800px;
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+        }
+        h1 {
+            font-size: 3em;
+            color: #ff0000;
+            text-shadow: 0 0 20px #ff0000;
+            margin-bottom: 20px;
+        }
+        .subtitle {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            color: #cccccc;
+        }
+        .play-button {
+            background: linear-gradient(45deg, #ff0000, #aa0000);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 1.5em;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 20px;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+        .play-button:hover {
+            background: linear-gradient(45deg, #cc0000, #880000);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.8);
+            transform: scale(1.05);
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+            text-align: left;
+        }
+        .feature {
+            background: rgba(255, 0, 0, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #333;
+        }
+        .feature h3 {
+            color: #ff0000;
+            margin: 0 0 10px 0;
+        }
+        .controls {
+            background: rgba(0, 255, 0, 0.1);
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border: 1px solid #00ff00;
+        }
+        .controls h3 {
+            color: #00ff00;
+            margin: 0 0 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧟 RACCOON CITY OUTBREAK</h1>
+        <div class="subtitle">A Resident Evil-Style Zombie Survival Game</div>
+        
+        <a href="resident-evil-style.html" class="play-button">▶️ PLAY NOW</a>
+        
+        <div class="controls">
+            <h3>🎮 CONTROLS</h3>
+            <strong>WASD:</strong> Move | <strong>Mouse:</strong> Aim & Shoot | <strong>Space:</strong> Dodge Roll<br>
+            <strong>E:</strong> Enter/Exit Buildings | <strong>F:</strong> Pick up Weapons | <strong>R:</strong> Reload
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>🧟 Realistic Zombies</h3>
+                Walkers, Runners, Crawlers, TYRANT boss, and LICKER mutants with detailed sprites
+            </div>
+            <div class="feature">
+                <h3>🔫 Multiple Weapons</h3>
+                GLOCK 17, M4 CARBINE, MOSSBERG 500 with realistic ballistics
+            </div>
+            <div class="feature">
+                <h3>🏢 Safe Buildings</h3>
+                Police Station, Hospital, Gun Shop - enter for protection and healing
+            </div>
+            <div class="feature">
+                <h3>🎨 Atmospheric Graphics</h3>
+                Street lighting, blood effects, screen shake, and Resident Evil ambiance
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px; color: #666; font-size: 0.9em;">
+            🎯 Survive the zombie outbreak in Raccoon City! 🧟‍♂️<br>
+            Built with HTML5 Canvas - Works in any modern browser
+        </div>
+    </div>
+</body>
+</html>

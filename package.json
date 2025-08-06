@@ -1,0 +1,15 @@
+{
+  "name": "police-vs-zombies",
+  "version": "1.0.0",
+  "description": "A multiplayer zombie survival game",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.14.2"
+  },
+  "author": "",
+  "license": "MIT"
+}

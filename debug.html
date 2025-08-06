@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test</title>
+    <style>
+        body { background: #000; color: white; font-family: Arial; }
+        canvas { border: 2px solid #fff; display: block; margin: 20px auto; }
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center;">Debug Test</h2>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <div id="log" style="text-align: center; margin-top: 20px;"></div>
+    
+    <script>
+        function log(message) {
+            console.log(message);
+            document.getElementById('log').innerHTML += message + '<br>';
+        }
+        
+        log('Starting debug test...');
+        
+        const canvas = document.getElementById('canvas');
+        log('Canvas element: ' + (canvas ? 'Found' : 'Not found'));
+        
+        const ctx = canvas.getContext('2d');
+        log('Context: ' + (ctx ? 'Found' : 'Not found'));
+        
+        // Test 1: Fill canvas with color
+        log('Test 1: Filling canvas with red...');
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(0, 0, 800, 600);
+        
+        setTimeout(() => {
+            // Test 2: Draw some shapes
+            log('Test 2: Drawing shapes...');
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(100, 100, 100, 100);
+            
+            ctx.fillStyle = '#0000ff';
+            ctx.beginPath();
+            ctx.arc(400, 300, 50, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('TEST SUCCESS!', 400, 500);
+            
+            // Test 3: Animation
+            let x = 0;
+            function animate() {
+                ctx.fillStyle = '#ffff00';
+                ctx.fillRect(x, 400, 20, 20);
+                x += 2;
+                if (x < 780) {
+                    requestAnimationFrame(animate);
+                } else {
+                    log('All tests completed successfully!');
+                }
+            }
+            animate();
+            
+        }, 1000);
+        
+        log('Debug test setup complete');
+    </script>
+</body>
+</html>

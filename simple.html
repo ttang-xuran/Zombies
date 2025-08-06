@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Game Test</title>
+    <style>
+        body { margin: 0; background: #000; color: white; font-family: Arial; }
+        canvas { border: 2px solid #333; background: #111; display: block; margin: 20px auto; }
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center;">Simple Game Test</h2>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <p style="text-align: center;">Use WASD to move the blue square</p>
+    
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const player = {
+            x: 400,
+            y: 300,
+            size: 20,
+            speed: 3
+        };
+        
+        const keys = {};
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+        
+        function update() {
+            if (keys['KeyW']) player.y -= player.speed;
+            if (keys['KeyS']) player.y += player.speed;
+            if (keys['KeyA']) player.x -= player.speed;
+            if (keys['KeyD']) player.x += player.speed;
+            
+            player.x = Math.max(player.size, Math.min(800 - player.size, player.x));
+            player.y = Math.max(player.size, Math.min(600 - player.size, player.y));
+        }
+        
+        function render() {
+            // Clear canvas
+            ctx.clearRect(0, 0, 800, 600);
+            
+            // Draw grid
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < 800; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, 600);
+                ctx.stroke();
+            }
+            for (let y = 0; y < 600; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(800, y);
+                ctx.stroke();
+            }
+            
+            // Draw some static objects
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(100, 100, 100, 80);
+            
+            ctx.fillStyle = '#666';
+            ctx.fillRect(300, 200, 60, 30);
+            
+            ctx.fillStyle = '#00aa00';
+            ctx.fillRect(500, 150, 20, 20);
+            
+            // Draw player
+            ctx.fillStyle = '#0066cc';
+            ctx.fillRect(player.x - player.size/2, player.y - player.size/2, player.size, player.size);
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('YOU', player.x, player.y - 15);
+        }
+        
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        console.log('Starting simple game...');
+        gameLoop();
+    </script>
+</body>
+</html>
