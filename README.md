@@ -1,56 +1,82 @@
-# 🧟 Raccoon City Outbreak - Zombie Survival Game
+# 🧟 Mobile Zombie Survival Game
 
-A Resident Evil-style zombie survival game built with HTML5 Canvas and JavaScript.
+A thrilling 3D zombie survival game optimized for mobile devices, built with Babylon.js.
 
-## 🎮 How to Play
+## 🎮 Play Now
 
-- **WASD** - Move your police character
-- **Mouse** - Aim and shoot (click to fire)
-- **Space** - Dodge roll (temporary invincibility)
-- **E** - Enter/Exit buildings (safe zones)
-- **F** - Pick up weapons
-- **R** - Reload weapon
+**Live Game:** [Play on GitHub Pages](https://your-username.github.io/zombie-game/)
 
-## 🧟 Zombie Types
+## 📱 Mobile-Optimized Features
 
-- **Walker** - Slow but persistent zombies with rotting flesh
-- **Runner** - Fast, aggressive zombies
-- **Crawler** - Damaged zombies crawling on ground
-- **TYRANT** - Massive boss zombie with glowing red eyes
-- **LICKER** - Mutant with exposed brain and long tongue
+- **Touch Controls:** Virtual joystick for movement
+- **Look Controls:** Touch the upper screen to look around  
+- **Shoot Button:** Red fire button for shooting zombies
+- **iPhone Compatible:** Optimized for iOS devices
+- **Responsive Design:** Works on all mobile screen sizes
 
-## 🔫 Weapons
+## 🕹️ How to Play
 
-- **GLOCK 17** - Starting pistol (15 rounds)
-- **M4 CARBINE** - Assault rifle (30 rounds)
-- **MOSSBERG 500** - Combat shotgun (8 rounds)
+### Mobile Controls
+- **Move:** Use the virtual joystick (bottom left)
+- **Look:** Touch and drag on the upper part of the screen
+- **Shoot:** Tap the red "FIRE" button (bottom right)
+- **Survive:** Kill zombies and avoid being overwhelmed!
 
-## 🏢 Locations
+## 🧟 Game Features
 
-- **Police Station** - Starting safe zone
-- **Hospital** - Medical supplies
-- **Gun Shop** - Weapon upgrades
-- **Safe House** - Temporary shelter
-- **Warehouse** - Storage facility
+- **Realistic Zombies:** Human-shaped zombies with decayed appearance
+- **Ground-Based Physics:** Everything walks on the ground naturally  
+- **3D Environment:** Immersive 3D world with buildings
+- **Progressive Difficulty:** More zombies spawn over time
+- **Health System:** Take damage when zombies get too close
+- **Ammo Management:** Limited ammunition adds strategy
+- **Kill Counter:** Track your zombie elimination score
 
-## 🎯 Features
+## 🎯 Deployment Instructions
 
-- Realistic zombie sprites with rotting flesh, claws, and gore
-- Dynamic lighting with street lamps
-- Blood splatter effects
-- Screen shake on damage
-- Health regeneration in buildings
-- Atmospheric Resident Evil-style graphics
+### Deploy to GitHub Pages
 
-## 🌐 Play Online
+1. **Create a new repository on GitHub**
+2. **Run these commands:**
 
-[Play the Game](https://yourusername.github.io/raccoon-city-outbreak/resident-evil-style.html)
+```bash
+# Initialize git repository
+git init
 
-## 🛠️ Local Setup
+# Add all files
+git add .
 
-1. Clone this repository
-2. Run a local HTTP server (Python: `python -m http.server`)
-3. Open `resident-evil-style.html` in your browser
+# Create initial commit
+git commit -m "🧟 Add mobile zombie survival game"
 
----
-*Survive the zombie outbreak in Raccoon City!* 🧟‍♂️🔫
+# Create main branch
+git branch -M main
+
+# Add your GitHub remote (replace YOUR_USERNAME and REPO_NAME)
+git remote add origin https://github.com/YOUR_USERNAME/REPO_NAME.git
+
+# Push to GitHub
+git push -u origin main
+```
+
+3. **Enable GitHub Pages:**
+   - Go to repository Settings → Pages
+   - Select "Deploy from a branch" 
+   - Choose "main" branch and "/ (root)" folder
+   - Save settings
+
+4. **Share your game:**
+   - Game URL: `https://YOUR_USERNAME.github.io/REPO_NAME/`
+
+## 📱 iPhone Compatibility
+
+The game is fully optimized for iPhone with:
+- Proper viewport settings
+- Touch-friendly controls
+- Full-screen experience
+- No zoom/scroll issues
+- Smooth performance
+
+## 🚀 Ready to Deploy!
+
+Your zombie survival game is ready to be deployed and played by everyone on their mobile devices!
