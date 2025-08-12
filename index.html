@@ -98,16 +98,16 @@
         
         .simple-shoot-button {
             position: fixed;
-            width: 120px;
-            height: 120px;
-            bottom: 40px;
-            right: 30px;
+            width: 80px;
+            height: 80px;
+            bottom: 50px;
+            right: 40px;
             background: linear-gradient(135deg, #ff4444, #cc0000);
-            border: 4px solid #ffffff;
+            border: 3px solid #ffffff;
             border-radius: 50%;
             color: white;
             font-family: 'Creepster', cursive;
-            font-size: 12px;
+            font-size: 16px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -115,21 +115,29 @@
             z-index: 1001;
             pointer-events: all;
             touch-action: none;
-            box-shadow: 0 0 25px rgba(255, 68, 68, 0.7);
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.7);
         }
         
-        .fire-crosshair {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            background: rgba(255, 255, 255, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        .shoot-zone {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 998;
+            pointer-events: all;
+            touch-action: none;
+        }
+        
+        .aim-line {
+            position: fixed;
+            width: 3px;
+            background: linear-gradient(to bottom, rgba(255, 255, 0, 0.8), rgba(255, 255, 0, 0.3));
+            border-radius: 2px;
             pointer-events: none;
-            transition: none;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 0 6px rgba(255, 255, 0, 0.6);
         }
         
         
@@ -272,13 +280,14 @@
     
     <div id="instructions">
         <div style="font-size: 24px; margin-bottom: 15px;"><strong>🧟 CITY SURVIVAL</strong></div>
-        <div>• <span class="warning">REALISTIC CITY WITH CARS & BUILDINGS</span></div>
-        <div>• Left joystick: Move/Drive cars</div>
-        <div>• <span class="warning">FIRE button: Shoot, Enter buildings, Get in cars</span></div>
+        <div>• <span class="warning">INTUITIVE TAP-TO-AIM SHOOTING!</span></div>
+        <div>• Left joystick: Move around/Drive cars</div>
+        <div>• <span class="warning">TAP ANYWHERE to aim and shoot in that direction</span></div>
+        <div>• <span class="warning">See yellow aim line from center to target!</span></div>
+        <div>• Red FIRE button: Quick forward shooting</div>
         <div>• <span class="warning">🏫 School, 🚓 Police Station, 🚌 Bus Station</span></div>
         <div>• <span class="warning">🚗 Pick up cars on the street and drive!</span></div>
-        <div>• Hold FIRE button near cars to enter/exit</div>
-        <div>• <span class="warning">Full interactive city environment!</span></div>
+        <div>• <span class="warning">Most intuitive shooting system ever!</span></div>
         <button class="start-button" onclick="startMobileGame()">🎮 START GAME</button>
     </div>
     
@@ -287,10 +296,10 @@
         <div class="simple-joystick-handle" id="moveHandle"></div>
     </div>
     
-    <div class="simple-shoot-button" id="shootButton">
-        🎯<br>AIM &<br>FIRE
-        <div class="fire-crosshair" id="fireCrosshair"></div>
-    </div>
+    <div class="shoot-zone" id="shootZone"></div>
+    <div class="aim-line" id="aimLine"></div>
+    
+    <div class="simple-shoot-button" id="shootButton">🔥</div>
     
     
     <div class="crosshair"></div>
@@ -712,125 +721,164 @@
             
             setupSimpleShoot() {
                 const shootButton = document.getElementById('shootButton');
-                const fireCrosshair = document.getElementById('fireCrosshair');
+                const shootZone = document.getElementById('shootZone');
+                const aimLine = document.getElementById('aimLine');
                 const aimIndicator = document.getElementById('aimIndicator');
                 
                 let isAiming = false;
-                let aimCenter = { x: 0, y: 0 };
-                let lastTouch = null;
+                let aimStartPos = { x: 0, y: 0 };
+                let currentAimPos = { x: 0, y: 0 };
                 let shootTimer = null;
                 
-                const startAiming = (e) => {
+                // SIMPLE FIRE BUTTON - Just shoots forward
+                const fireButtonShoot = (e) => {
                     e.preventDefault();
-                    isAiming = true;
+                    e.stopPropagation();
                     
-                    const touch = e.touches ? e.touches[0] : e;
-                    const rect = shootButton.getBoundingClientRect();
-                    aimCenter = {
-                        x: rect.left + rect.width / 2,
-                        y: rect.top + rect.height / 2
-                    };
-                    lastTouch = { x: touch.clientX, y: touch.clientY };
-                    
-                    // Show aim indicator
-                    aimIndicator.style.display = 'block';
-                    aimIndicator.style.left = touch.clientX + 'px';
-                    aimIndicator.style.top = touch.clientY + 'px';
-                    
-                    // Immediate shooting - no delay
-                    console.log('FIRE BUTTON PRESSED - Starting shooting...');
-                    this.shoot();
-                    shootTimer = setInterval(() => this.shoot(), 200);
-                    
-                    // Check for interactions with long press
+                    // Check for interactions with long press first
                     if (this.nearBuilding) {
                         setTimeout(() => {
-                            if (isAiming) this.enterBuilding(this.nearBuilding);
+                            this.enterBuilding(this.nearBuilding);
                         }, 1000);
+                        return;
                     }
                     
-                    // Check for car entry with long press
                     const nearCar = this.cars.find(car => car.nearPlayer && car.available);
                     if (nearCar && !this.inCar) {
                         setTimeout(() => {
-                            if (isAiming) this.enterCar(nearCar);
+                            this.enterCar(nearCar);
                         }, 1500);
+                        return;
                     }
                     
-                    // Check for car exit with long press
                     if (this.inCar) {
                         setTimeout(() => {
-                            if (isAiming) this.exitCar();
+                            this.exitCar();
                         }, 1500);
+                        return;
                     }
                     
-                    console.log('AIM & SHOOT STARTED');
+                    // Simple shooting
+                    console.log('FIRE BUTTON - Shooting forward');
+                    this.shoot();
+                };
+                
+                // TAP-TO-AIM SYSTEM - Much more intuitive!
+                const startAiming = (e) => {
+                    // Don't interfere with joystick
+                    const joystick = document.getElementById('moveJoystick');
+                    const joystickRect = joystick.getBoundingClientRect();
+                    const touch = e.touches ? e.touches[0] : e;
+                    
+                    if (touch.clientX >= joystickRect.left - 20 && 
+                        touch.clientX <= joystickRect.right + 20 && 
+                        touch.clientY >= joystickRect.top - 20 && 
+                        touch.clientY <= joystickRect.bottom + 20) {
+                        return; // Let joystick handle this
+                    }
+                    
+                    e.preventDefault();
+                    isAiming = true;
+                    
+                    aimStartPos = { x: touch.clientX, y: touch.clientY };
+                    currentAimPos = { x: touch.clientX, y: touch.clientY };
+                    
+                    // Show aim line from center to touch point
+                    this.showAimLine(aimStartPos, currentAimPos);
+                    
+                    // Calculate aim direction and rotate camera
+                    this.aimAtPoint(touch.clientX, touch.clientY);
+                    
+                    // Start shooting
+                    console.log('TAP-TO-AIM - Starting aim and shoot');
+                    this.shoot();
+                    shootTimer = setInterval(() => this.shoot(), 180);
                 };
                 
                 const moveAiming = (e) => {
-                    if (!isAiming || !lastTouch) return;
+                    if (!isAiming) return;
                     e.preventDefault();
                     
                     const touch = e.touches ? e.touches[0] : e;
-                    const deltaX = touch.clientX - aimCenter.x;
-                    const deltaY = touch.clientY - aimCenter.y;
-                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                    const maxDistance = 50;
+                    currentAimPos = { x: touch.clientX, y: touch.clientY };
                     
-                    // Move fire crosshair within button
-                    if (distance <= maxDistance) {
-                        fireCrosshair.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
-                    } else {
-                        const angle = Math.atan2(deltaY, deltaX);
-                        const limitedX = Math.cos(angle) * maxDistance;
-                        const limitedY = Math.sin(angle) * maxDistance;
-                        fireCrosshair.style.transform = `translate(calc(-50% + ${limitedX}px), calc(-50% + ${limitedY}px))`;
-                    }
+                    // Update aim line
+                    this.showAimLine(aimStartPos, currentAimPos);
                     
-                    // Control camera aiming
-                    const aimDeltaX = touch.clientX - lastTouch.x;
-                    const aimDeltaY = touch.clientY - lastTouch.y;
-                    
-                    this.camera.rotation.y += aimDeltaX * 0.008;
-                    this.camera.rotation.x += aimDeltaY * 0.008;
-                    this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
-                    
-                    // Update aim indicator
-                    aimIndicator.style.left = touch.clientX + 'px';
-                    aimIndicator.style.top = touch.clientY + 'px';
-                    
-                    lastTouch = { x: touch.clientX, y: touch.clientY };
+                    // Update camera rotation
+                    this.aimAtPoint(touch.clientX, touch.clientY);
                 };
                 
                 const endAiming = (e) => {
+                    if (!isAiming) return;
                     e.preventDefault();
+                    
                     isAiming = false;
-                    lastTouch = null;
                     
-                    // Reset fire crosshair
-                    fireCrosshair.style.transform = 'translate(-50%, -50%)';
+                    // Hide aim line
+                    aimLine.style.display = 'none';
                     
-                    // Hide aim indicator
-                    aimIndicator.style.display = 'none';
-                    
-                    // Stop continuous shooting
+                    // Stop shooting
                     if (shootTimer) {
-                        clearTimeout(shootTimer);
                         clearInterval(shootTimer);
                         shootTimer = null;
                     }
                     
-                    console.log('AIM & SHOOT ENDED');
+                    console.log('TAP-TO-AIM - Ended');
                 };
                 
-                shootButton.addEventListener('touchstart', startAiming, { passive: false });
-                shootButton.addEventListener('touchmove', moveAiming, { passive: false });
-                shootButton.addEventListener('touchend', endAiming, { passive: false });
+                // Fire button events
+                shootButton.addEventListener('touchstart', fireButtonShoot, { passive: false });
+                shootButton.addEventListener('mousedown', fireButtonShoot);
+                
+                // Tap-to-aim events on the full screen
+                shootZone.addEventListener('touchstart', startAiming, { passive: false });
+                shootZone.addEventListener('touchmove', moveAiming, { passive: false });
+                shootZone.addEventListener('touchend', endAiming, { passive: false });
                 
                 // Mouse events for desktop
-                shootButton.addEventListener('mousedown', startAiming);
+                shootZone.addEventListener('mousedown', startAiming);
                 document.addEventListener('mousemove', moveAiming);
                 document.addEventListener('mouseup', endAiming);
+            }
+            
+            showAimLine(start, end) {
+                const aimLine = document.getElementById('aimLine');
+                
+                // Calculate line position and rotation
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight / 2;
+                
+                const deltaX = end.x - centerX;
+                const deltaY = end.y - centerY;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+                
+                // Position and style the line
+                aimLine.style.display = 'block';
+                aimLine.style.left = centerX + 'px';
+                aimLine.style.top = centerY + 'px';
+                aimLine.style.height = distance + 'px';
+                aimLine.style.transformOrigin = '50% 0%';
+                aimLine.style.transform = `rotate(${angle + 90}deg)`;
+            }
+            
+            aimAtPoint(screenX, screenY) {
+                // Convert screen coordinates to 3D aiming
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight / 2;
+                
+                const deltaX = screenX - centerX;
+                const deltaY = screenY - centerY;
+                
+                // Convert to camera rotation
+                const sensitivity = 0.003;
+                const targetRotationY = this.camera.rotation.y + (deltaX * sensitivity);
+                const targetRotationX = this.camera.rotation.x + (deltaY * sensitivity);
+                
+                // Smooth camera rotation
+                this.camera.rotation.y = targetRotationY;
+                this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, targetRotationX));
             }
             
             setupKeyboardControls() {
