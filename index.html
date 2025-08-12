@@ -280,14 +280,14 @@
     
     <div id="instructions">
         <div style="font-size: 24px; margin-bottom: 15px;"><strong>🧟 CITY SURVIVAL</strong></div>
-        <div>• <span class="warning">PERFECT SHOOTING CONTROL!</span></div>
+        <div>• <span class="warning">GIANT ZOMBIE BUILDING ENCOUNTERS!</span></div>
         <div>• Left joystick: Move around/Drive cars</div>
-        <div>• <span class="warning">HOLD FIRE button to aim (see yellow line)</span></div>
-        <div>• <span class="warning">DRAG to adjust aim direction</span></div>
-        <div>• <span class="warning">RELEASE to shoot! Perfect control!</span></div>
+        <div>• <span class="warning">HOLD FIRE button to aim and shoot</span></div>
+        <div>• <span class="warning">🏢 Walk near buildings → HOLD FIRE to enter</span></div>
+        <div>• <span class="warning">👹 FACE GIANT ZOMBIES inside buildings!</span></div>
+        <div>• <span class="warning">🚗 Walk near cars → HOLD FIRE to drive</span></div>
         <div>• <span class="warning">∞ UNLIMITED AMMO</span></div>
-        <div>• <span class="warning">🏫 School, 🚓 Police Station, 🚌 Bus Station</span></div>
-        <div>• <span class="warning">🚗 Pick up cars on the street and drive!</span></div>
+        <div>• <span class="warning">Full interior building exploration!</span></div>
         <button class="start-button" onclick="startMobileGame()">🎮 START GAME</button>
     </div>
     
@@ -342,6 +342,9 @@
                 this.nearBuilding = null;
                 this.buildings = [];
                 this.cars = [];
+                this.insideBuilding = null;
+                this.buildingInterior = null;
+                this.giantZombie = null;
                 
                 this.init();
             }
@@ -756,11 +759,19 @@
                     interactionTimer = setTimeout(() => {
                         if (!isAiming) return;
                         
+                        // Exit building if inside
+                        if (this.insideBuilding) {
+                            this.exitBuilding();
+                            return;
+                        }
+                        
+                        // Enter building if near one
                         if (this.nearBuilding) {
                             this.enterBuilding(this.nearBuilding);
                             return;
                         }
                         
+                        // Car interactions
                         const nearCar = this.cars.find(car => car.nearPlayer && car.available);
                         if (nearCar && !this.inCar) {
                             this.enterCar(nearCar);
@@ -771,7 +782,7 @@
                             this.exitCar();
                             return;
                         }
-                    }, 1500);
+                    }, 1000); // Reduced to 1 second
                 };
                 
                 const moveFireButton = (e) => {
@@ -1307,18 +1318,49 @@
             checkBuildingInteraction() {
                 this.nearBuilding = null;
                 
+                if (this.insideBuilding) {
+                    this.showInteractionPrompt("Hold FIRE button to exit building");
+                    return;
+                }
+                
                 this.buildings.forEach(building => {
                     const distance = BABYLON.Vector3.Distance(this.camera.position, building.entrance.position);
-                    if (distance < 10) {
+                    if (distance < 15) { // Increased detection range
                         this.nearBuilding = building;
-                        this.showInteractionPrompt(`Press FIRE to enter ${building.name}`);
+                        this.showInteractionPrompt(`🏢 Hold FIRE button to enter ${building.name}`);
                     }
                 });
             }
             
             showInteractionPrompt(text) {
-                // You can implement UI prompt here if needed
                 console.log(text);
+                // Show visual prompt on screen
+                let prompt = document.getElementById('interactionPrompt');
+                if (!prompt) {
+                    prompt = document.createElement('div');
+                    prompt.id = 'interactionPrompt';
+                    prompt.style.position = 'fixed';
+                    prompt.style.top = '20%';
+                    prompt.style.left = '50%';
+                    prompt.style.transform = 'translate(-50%, -50%)';
+                    prompt.style.background = 'rgba(255, 255, 0, 0.9)';
+                    prompt.style.color = 'black';
+                    prompt.style.padding = '15px 25px';
+                    prompt.style.borderRadius = '10px';
+                    prompt.style.fontFamily = 'Arial, sans-serif';
+                    prompt.style.fontWeight = 'bold';
+                    prompt.style.fontSize = '16px';
+                    prompt.style.zIndex = '2000';
+                    prompt.style.boxShadow = '0 0 20px rgba(255, 255, 0, 0.8)';
+                    document.body.appendChild(prompt);
+                }
+                prompt.textContent = text;
+                prompt.style.display = 'block';
+                
+                // Hide after 3 seconds
+                setTimeout(() => {
+                    if (prompt) prompt.style.display = 'none';
+                }, 3000);
             }
             
             enterCar(car) {
@@ -1352,14 +1394,282 @@
             enterBuilding(building) {
                 if (!building) return;
                 
-                // Teleport inside building
+                console.log(`Entering ${building.name}!`);
+                this.showInteractionPrompt(`Entering ${building.name}...`);
+                
+                // Create building interior
+                this.createBuildingInterior(building);
+                
+                // Position player in interior
                 const interiorPos = building.position.clone();
                 interiorPos.y = this.groundLevel + this.playerHeight;
+                interiorPos.z -= 15; // Move player back in the room
                 this.camera.position = interiorPos;
                 
-                console.log(`Entered ${building.name}!`);
+                // Mark that player is inside a building
+                this.insideBuilding = building;
                 
-                // You could create interior scenes here
+                // Spawn giant zombie after 2 seconds
+                setTimeout(() => {
+                    this.spawnGiantZombie(building);
+                    this.showInteractionPrompt("🚨 GIANT ZOMBIE APPROACHING! 🚨");
+                }, 2000);
+            }
+            
+            createBuildingInterior(building) {
+                // Remove existing interior if any
+                if (this.buildingInterior) {
+                    this.buildingInterior.dispose();
+                }
+                
+                const interiorGroup = new BABYLON.TransformNode(`${building.type}Interior`, this.scene);
+                this.buildingInterior = interiorGroup;
+                
+                // Create room walls
+                const roomSize = { width: 30, height: 15, depth: 25 };
+                
+                // Floor
+                const floor = BABYLON.MeshBuilder.CreateGround("interiorFloor", {
+                    width: roomSize.width, height: roomSize.depth
+                }, this.scene);
+                floor.position.set(building.position.x, this.groundLevel, building.position.z);
+                floor.parent = interiorGroup;
+                
+                const floorMaterial = new BABYLON.StandardMaterial("floorMat", this.scene);
+                floorMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.3); // Dark floor
+                floor.material = floorMaterial;
+                
+                // Walls
+                const wallPositions = [
+                    { pos: [0, roomSize.height/2, roomSize.depth/2], size: [roomSize.width, roomSize.height, 1] }, // Front
+                    { pos: [0, roomSize.height/2, -roomSize.depth/2], size: [roomSize.width, roomSize.height, 1] }, // Back
+                    { pos: [roomSize.width/2, roomSize.height/2, 0], size: [1, roomSize.height, roomSize.depth] }, // Right
+                    { pos: [-roomSize.width/2, roomSize.height/2, 0], size: [1, roomSize.height, roomSize.depth] } // Left
+                ];
+                
+                wallPositions.forEach((config, i) => {
+                    const wall = BABYLON.MeshBuilder.CreateBox(`wall${i}`, {
+                        width: config.size[0], height: config.size[1], depth: config.size[2]
+                    }, this.scene);
+                    wall.position.set(
+                        building.position.x + config.pos[0],
+                        this.groundLevel + config.pos[1],
+                        building.position.z + config.pos[2]
+                    );
+                    wall.parent = interiorGroup;
+                    
+                    const wallMaterial = new BABYLON.StandardMaterial(`wallMat${i}`, this.scene);
+                    wallMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.4, 0.3); // Brown walls
+                    wall.material = wallMaterial;
+                });
+                
+                // Add some interior furniture based on building type
+                this.addInteriorFurniture(building, interiorGroup, roomSize);
+                
+                // Hide exterior buildings temporarily
+                this.hideExteriorBuildings(true);
+            }
+            
+            addInteriorFurniture(building, parent, roomSize) {
+                const furnitureColor = new BABYLON.Color3(0.4, 0.2, 0.1); // Dark brown
+                
+                if (building.type === 'school') {
+                    // Add desks
+                    for (let i = 0; i < 6; i++) {
+                        const desk = BABYLON.MeshBuilder.CreateBox("desk", {
+                            width: 3, height: 1.5, depth: 2
+                        }, this.scene);
+                        desk.position.set(
+                            building.position.x + (i % 3 - 1) * 8,
+                            this.groundLevel + 0.75,
+                            building.position.z + Math.floor(i / 3) * 6 - 3
+                        );
+                        desk.parent = parent;
+                        
+                        const deskMaterial = new BABYLON.StandardMaterial("deskMat", this.scene);
+                        deskMaterial.diffuseColor = furnitureColor;
+                        desk.material = deskMaterial;
+                    }
+                } else if (building.type === 'police') {
+                    // Add police equipment
+                    const counter = BABYLON.MeshBuilder.CreateBox("counter", {
+                        width: 12, height: 2, depth: 3
+                    }, this.scene);
+                    counter.position.set(building.position.x, this.groundLevel + 1, building.position.z + 8);
+                    counter.parent = parent;
+                    
+                    const counterMaterial = new BABYLON.StandardMaterial("counterMat", this.scene);
+                    counterMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.4); // Police blue
+                    counter.material = counterMaterial;
+                } else if (building.type === 'bus') {
+                    // Add benches
+                    for (let i = 0; i < 4; i++) {
+                        const bench = BABYLON.MeshBuilder.CreateBox("bench", {
+                            width: 8, height: 1, depth: 1.5
+                        }, this.scene);
+                        bench.position.set(
+                            building.position.x,
+                            this.groundLevel + 0.5,
+                            building.position.z + (i - 2) * 4
+                        );
+                        bench.parent = parent;
+                        
+                        const benchMaterial = new BABYLON.StandardMaterial("benchMat", this.scene);
+                        benchMaterial.diffuseColor = furnitureColor;
+                        bench.material = benchMaterial;
+                    }
+                }
+            }
+            
+            spawnGiantZombie(building) {
+                // Create giant zombie at far end of room
+                const giantZombie = this.createGiantZombie();
+                giantZombie.position.set(
+                    building.position.x,
+                    this.groundLevel,
+                    building.position.z + 10 // At far end of room
+                );
+                
+                // Make it walk towards player menacingly
+                this.giantZombie = giantZombie;
+                this.giantZombieTarget = this.camera.position.clone();
+                
+                // Add to zombies list for shooting detection
+                this.zombies.push({
+                    group: giantZombie,
+                    mesh: giantZombie.getChildMeshes()[0],
+                    parts: { body: giantZombie.getChildMeshes()[0] },
+                    id: Date.now(),
+                    health: 10, // Takes more hits
+                    speed: 0.3,
+                    lastAttack: 0,
+                    isGiant: true
+                });
+                
+                console.log('Giant zombie spawned!');
+            }
+            
+            createGiantZombie() {
+                const zombieGroup = new BABYLON.TransformNode("giantZombie", this.scene);
+                
+                // Much larger torso
+                const torso = BABYLON.MeshBuilder.CreateCylinder("giantTorso", {
+                    height: 8, diameterTop: 4, diameterBottom: 3, tessellation: 16
+                }, this.scene);
+                torso.position.y = 4;
+                torso.parent = zombieGroup;
+                
+                // Giant head
+                const head = BABYLON.MeshBuilder.CreateSphere("giantHead", {diameter: 3}, this.scene);
+                head.position.y = 9;
+                head.parent = zombieGroup;
+                
+                // Giant arms
+                const leftArm = BABYLON.MeshBuilder.CreateCylinder("giantLeftArm", {
+                    height: 6, diameter: 1.5, tessellation: 12
+                }, this.scene);
+                leftArm.position.set(-3, 6, 0);
+                leftArm.rotation.z = Math.PI / 6;
+                leftArm.parent = zombieGroup;
+                
+                const rightArm = BABYLON.MeshBuilder.CreateCylinder("giantRightArm", {
+                    height: 6, diameter: 1.5, tessellation: 12
+                }, this.scene);
+                rightArm.position.set(3, 6, 0);
+                rightArm.rotation.z = -Math.PI / 6;
+                rightArm.parent = zombieGroup;
+                
+                // Giant legs
+                const leftLeg = BABYLON.MeshBuilder.CreateCylinder("giantLeftLeg", {
+                    height: 4, diameter: 1.8, tessellation: 12
+                }, this.scene);
+                leftLeg.position.set(-1, 2, 0);
+                leftLeg.parent = zombieGroup;
+                
+                const rightLeg = BABYLON.MeshBuilder.CreateCylinder("giantRightLeg", {
+                    height: 4, diameter: 1.8, tessellation: 12
+                }, this.scene);
+                rightLeg.position.set(1, 2, 0);
+                rightLeg.parent = zombieGroup;
+                
+                // Scary red material for giant zombie
+                const giantMaterial = new BABYLON.StandardMaterial("giantZombieMaterial", this.scene);
+                giantMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.1, 0.1); // Dark red
+                giantMaterial.emissiveColor = new BABYLON.Color3(0.2, 0.05, 0.05);
+                
+                torso.material = giantMaterial;
+                head.material = giantMaterial;
+                leftArm.material = giantMaterial;
+                rightArm.material = giantMaterial;
+                leftLeg.material = giantMaterial;
+                rightLeg.material = giantMaterial;
+                
+                // Glowing red eyes
+                const leftEye = BABYLON.MeshBuilder.CreateSphere("giantLeftEye", {diameter: 0.3}, this.scene);
+                leftEye.position.set(-0.5, 0.2, -1.2);
+                leftEye.parent = head;
+                
+                const rightEye = BABYLON.MeshBuilder.CreateSphere("giantRightEye", {diameter: 0.3}, this.scene);
+                rightEye.position.set(0.5, 0.2, -1.2);
+                rightEye.parent = head;
+                
+                const eyeMaterial = new BABYLON.StandardMaterial("giantEyes", this.scene);
+                eyeMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0);
+                eyeMaterial.emissiveColor = new BABYLON.Color3(0.8, 0.1, 0.1);
+                
+                leftEye.material = eyeMaterial;
+                rightEye.material = eyeMaterial;
+                
+                return zombieGroup;
+            }
+            
+            hideExteriorBuildings(hide) {
+                // Hide or show exterior buildings when inside
+                this.buildings.forEach(building => {
+                    building.mesh.setEnabled(!hide);
+                    building.entrance.setEnabled(!hide);
+                });
+                
+                // Hide cars too
+                if (this.cars) {
+                    this.cars.forEach(car => {
+                        car.group.setEnabled(!hide);
+                    });
+                }
+            }
+            
+            exitBuilding() {
+                if (!this.insideBuilding) return;
+                
+                console.log('Exiting building...');
+                this.showInteractionPrompt('Exiting building...');
+                
+                // Remove interior
+                if (this.buildingInterior) {
+                    this.buildingInterior.dispose();
+                    this.buildingInterior = null;
+                }
+                
+                // Remove giant zombie from zombies list
+                if (this.giantZombie) {
+                    const giantIndex = this.zombies.findIndex(z => z.isGiant);
+                    if (giantIndex >= 0) {
+                        this.zombies.splice(giantIndex, 1);
+                    }
+                    this.giantZombie.dispose();
+                    this.giantZombie = null;
+                }
+                
+                // Position player outside building
+                const exitPos = this.insideBuilding.position.clone();
+                exitPos.z -= 20; // Move player away from building
+                exitPos.y = this.groundLevel + this.playerHeight;
+                this.camera.position = exitPos;
+                
+                // Show exterior again
+                this.hideExteriorBuildings(false);
+                
+                this.insideBuilding = null;
             }
             
             updateUI() {
