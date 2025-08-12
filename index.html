@@ -67,28 +67,47 @@
             align-items: center;
         }
         
-        #mobileControls {
+        /* Modern Mobile Controls - Split Screen Design */
+        .control-area-left {
             position: fixed;
-            bottom: 0;
             left: 0;
-            width: 100%;
-            height: 200px;
+            top: 0;
+            width: 40%;
+            height: 100%;
             z-index: 1001;
-            pointer-events: none;
+            pointer-events: all;
+            touch-action: none;
+            -webkit-touch-callout: none;
+        }
+        
+        .control-area-right {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 60%;
+            height: 100%;
+            z-index: 1001;
+            pointer-events: all;
+            touch-action: none;
+            -webkit-touch-callout: none;
         }
         
         .joystick {
             position: absolute;
             width: 120px;
             height: 120px;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.3);
-            border: 4px solid rgba(255, 255, 255, 0.6);
+            bottom: 60px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.25);
+            border: 3px solid rgba(255, 255, 255, 0.5);
             border-radius: 50%;
-            pointer-events: all;
-            touch-action: none;
-            -webkit-touch-callout: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+        
+        .joystick.active {
+            opacity: 1;
         }
         
         .joystick-handle {
@@ -105,38 +124,81 @@
             pointer-events: none;
         }
         
-        .shoot-button {
+        /* Visual hints for touch areas */
+        .control-hint-left {
             position: absolute;
-            width: 90px;
-            height: 90px;
-            bottom: 30px;
-            right: 20px;
-            background: linear-gradient(135deg, #ff4444, #cc0000);
-            border: 4px solid #ffffff;
-            border-radius: 50%;
-            color: white;
-            font-family: 'Creepster', cursive;
-            font-size: 16px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: all;
-            touch-action: none;
-            box-shadow: 0 0 25px rgba(255, 68, 68, 0.7);
-            -webkit-touch-callout: none;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            text-align: center;
+            pointer-events: none;
+            width: 140px;
         }
         
-        .look-area {
+        .control-hint-right {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            text-align: center;
+            pointer-events: none;
+            width: 140px;
+        }
+        
+        /* Crosshair for better aiming */
+        .crosshair {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 70%;
-            z-index: 999;
-            pointer-events: all;
-            touch-action: none;
-            -webkit-touch-callout: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 1002;
+            opacity: 0.8;
+        }
+        
+        .crosshair::before, .crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+        }
+        
+        .crosshair::before {
+            width: 16px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .crosshair::after {
+            width: 2px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .joystick {
+                width: 100px;
+                height: 100px;
+                bottom: 40px;
+                left: 25px;
+            }
+            .joystick-handle {
+                width: 40px;
+                height: 40px;
+            }
+            .control-hint-left, .control-hint-right {
+                font-size: 11px;
+                width: 120px;
+            }
         }
         
         #instructions {
@@ -232,24 +294,27 @@
     
     <div id="instructions">
         <div style="font-size: 24px; margin-bottom: 15px;"><strong>🧟 ZOMBIE SURVIVAL</strong></div>
-        <div>• <span class="warning">Mobile-optimized zombie game</span></div>
-        <div>• Left joystick: Move around</div>
-        <div>• Touch upper screen: Look around</div>
-        <div>• Red button: Shoot zombies</div>
-        <div>• <span class="warning">Survive the undead horde!</span></div>
+        <div>• <span class="warning">Intuitive mobile controls</span></div>
+        <div>• Left side: Touch to move</div>
+        <div>• Right side: Drag to look, TAP to shoot</div>
+        <div>• <span class="warning">No awkward buttons - natural gameplay!</span></div>
         <button class="start-button" onclick="startMobileGame()">🎮 START GAME</button>
     </div>
     
-    <!-- Mobile Controls -->
-    <div id="mobileControls">
+    <!-- Modern Split-Screen Mobile Controls -->
+    <div class="control-area-left" id="leftControlArea">
         <div class="joystick" id="moveJoystick">
             <div class="joystick-handle" id="moveHandle"></div>
         </div>
-        <div class="shoot-button" id="shootButton">🔥<br>FIRE</div>
+        <div class="control-hint-left">👆 Touch anywhere<br>to move</div>
     </div>
     
-    <!-- Look control area -->
-    <div class="look-area" id="lookArea"></div>
+    <div class="control-area-right" id="rightControlArea">
+        <div class="control-hint-right">👆 Drag to look<br>Tap to shoot</div>
+    </div>
+    
+    <!-- Crosshair for better aiming -->
+    <div class="crosshair"></div>
 
     <script>
         class MobileZombieGame {
@@ -360,45 +425,46 @@
             }
             
             setupMobileControls() {
-                // Movement joystick
-                this.setupJoystick();
+                // Left side: Movement controls
+                this.setupLeftSideControls();
                 
-                // Look controls (touch upper screen)
-                this.setupLookControls();
-                
-                // Shoot button
-                this.setupShootButton();
+                // Right side: Look + shoot controls
+                this.setupRightSideControls();
             }
             
-            setupJoystick() {
+            setupLeftSideControls() {
+                const leftArea = document.getElementById('leftControlArea');
                 const joystick = document.getElementById('moveJoystick');
                 const handle = document.getElementById('moveHandle');
                 let isDragging = false;
-                let joystickRect;
-                let center;
+                let touchCenter = { x: 0, y: 0 };
                 
-                const startTouch = (e) => {
+                const startMovement = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    
+                    const touch = e.touches && e.touches.length > 0 ? e.touches[0] : e;
+                    touchCenter = { x: touch.clientX, y: touch.clientY };
+                    
+                    // Show joystick at touch position
+                    joystick.style.left = `${touch.clientX - leftArea.getBoundingClientRect().left - 60}px`;
+                    joystick.style.bottom = `${window.innerHeight - touch.clientY - 60}px`;
+                    joystick.classList.add('active');
+                    
                     isDragging = true;
-                    joystickRect = joystick.getBoundingClientRect();
-                    center = {
-                        x: joystickRect.left + joystickRect.width / 2,
-                        y: joystickRect.top + joystickRect.height / 2
-                    };
-                    console.log('Joystick started');
+                    console.log('Movement started');
                 };
                 
-                const moveTouch = (e) => {
+                const updateMovement = (e) => {
                     if (!isDragging) return;
                     e.preventDefault();
                     e.stopPropagation();
                     
                     const touch = e.touches && e.touches.length > 0 ? e.touches[0] : e;
-                    const deltaX = touch.clientX - center.x;
-                    const deltaY = touch.clientY - center.y;
+                    const deltaX = touch.clientX - touchCenter.x;
+                    const deltaY = touch.clientY - touchCenter.y;
                     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                    const maxDistance = 40;
+                    const maxDistance = 50;
                     
                     if (distance <= maxDistance) {
                         handle.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
@@ -414,43 +480,52 @@
                     }
                 };
                 
-                const endTouch = (e) => {
+                const endMovement = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     isDragging = false;
+                    
+                    // Hide joystick
+                    joystick.classList.remove('active');
                     handle.style.transform = 'translate(-50%, -50%)';
                     this.moveVector.x = 0;
                     this.moveVector.z = 0;
-                    console.log('Joystick ended');
+                    console.log('Movement ended');
                 };
                 
-                // Touch events for mobile - using passive: false to allow preventDefault
-                joystick.addEventListener('touchstart', startTouch, { passive: false });
-                joystick.addEventListener('touchmove', moveTouch, { passive: false });
-                joystick.addEventListener('touchend', endTouch, { passive: false });
-                joystick.addEventListener('touchcancel', endTouch, { passive: false });
+                // Touch events for left side
+                leftArea.addEventListener('touchstart', startMovement, { passive: false });
+                leftArea.addEventListener('touchmove', updateMovement, { passive: false });
+                leftArea.addEventListener('touchend', endMovement, { passive: false });
+                leftArea.addEventListener('touchcancel', endMovement, { passive: false });
                 
-                // Mouse events for desktop fallback
-                joystick.addEventListener('mousedown', startTouch);
-                document.addEventListener('mousemove', moveTouch);
-                document.addEventListener('mouseup', endTouch);
+                // Mouse events for desktop
+                leftArea.addEventListener('mousedown', startMovement);
+                document.addEventListener('mousemove', updateMovement);
+                document.addEventListener('mouseup', endMovement);
             }
             
-            setupLookControls() {
-                const lookArea = document.getElementById('lookArea');
+            setupRightSideControls() {
+                const rightArea = document.getElementById('rightControlArea');
                 let lastTouch = null;
                 let isLooking = false;
+                let touchStartTime = 0;
+                let hasMoved = false;
                 
-                const startLook = (e) => {
+                const startRightTouch = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    isLooking = true;
+                    
                     const touch = e.touches && e.touches.length > 0 ? e.touches[0] : e;
                     lastTouch = { x: touch.clientX, y: touch.clientY };
-                    console.log('Look started');
+                    touchStartTime = Date.now();
+                    isLooking = true;
+                    hasMoved = false;
+                    
+                    console.log('Right side touch started');
                 };
                 
-                const moveLook = (e) => {
+                const moveRightTouch = (e) => {
                     if (!lastTouch || !isLooking) return;
                     e.preventDefault();
                     e.stopPropagation();
@@ -459,47 +534,47 @@
                     const deltaX = touch.clientX - lastTouch.x;
                     const deltaY = touch.clientY - lastTouch.y;
                     
-                    // Apply look rotation
-                    this.camera.rotation.y += deltaX * 0.003;
-                    this.camera.rotation.x += deltaY * 0.003;
-                    this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
+                    // If user has moved their finger, they're looking around
+                    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+                        hasMoved = true;
+                        
+                        // Apply look rotation - same as mouse sensitivity
+                        this.camera.rotation.y += deltaX * 0.003;
+                        this.camera.rotation.x += deltaY * 0.003;
+                        this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
+                    }
                     
                     lastTouch = { x: touch.clientX, y: touch.clientY };
                 };
                 
-                const endLook = (e) => {
+                const endRightTouch = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    
+                    const touchDuration = Date.now() - touchStartTime;
+                    
+                    // If it was a quick tap without much movement, shoot
+                    if (!hasMoved && touchDuration < 200) {
+                        this.shoot();
+                        console.log('Quick tap - shooting');
+                    }
+                    
                     isLooking = false;
                     lastTouch = null;
-                    console.log('Look ended');
+                    hasMoved = false;
+                    console.log('Right side touch ended');
                 };
                 
-                // Touch events for look controls
-                lookArea.addEventListener('touchstart', startLook, { passive: false });
-                lookArea.addEventListener('touchmove', moveLook, { passive: false });
-                lookArea.addEventListener('touchend', endLook, { passive: false });
-                lookArea.addEventListener('touchcancel', endLook, { passive: false });
+                // Touch events for right side
+                rightArea.addEventListener('touchstart', startRightTouch, { passive: false });
+                rightArea.addEventListener('touchmove', moveRightTouch, { passive: false });
+                rightArea.addEventListener('touchend', endRightTouch, { passive: false });
+                rightArea.addEventListener('touchcancel', endRightTouch, { passive: false });
                 
-                // Mouse events for desktop
-                lookArea.addEventListener('mousedown', startLook);
-                lookArea.addEventListener('mousemove', moveLook);
-                lookArea.addEventListener('mouseup', endLook);
-            }
-            
-            setupShootButton() {
-                const shootButton = document.getElementById('shootButton');
-                
-                const shoot = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.shoot();
-                    console.log('Shooting');
-                };
-                
-                // Touch events for shoot button
-                shootButton.addEventListener('touchstart', shoot, { passive: false });
-                shootButton.addEventListener('mousedown', shoot, { passive: false });
+                // Mouse events for desktop - click to shoot, drag to look
+                rightArea.addEventListener('mousedown', startRightTouch);
+                rightArea.addEventListener('mousemove', moveRightTouch);
+                rightArea.addEventListener('mouseup', endRightTouch);
             }
             
             createMobileZombie() {
