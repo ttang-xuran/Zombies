@@ -331,6 +331,8 @@
                 
                 // Building interaction
                 this.nearBuilding = null;
+                this.buildings = [];
+                this.cars = [];
                 
                 this.init();
             }
@@ -388,6 +390,9 @@
             }
             
             createBuildings() {
+                // Initialize buildings array first
+                this.buildings = [];
+                
                 // School Building
                 this.createSchool();
                 
@@ -396,9 +401,6 @@
                 
                 // Bus Station
                 this.createBusStation();
-                
-                // Store buildings for interaction
-                this.buildings = [];
                 
                 // Create streets and cars
                 this.createStreets();
