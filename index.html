@@ -280,14 +280,14 @@
     
     <div id="instructions">
         <div style="font-size: 24px; margin-bottom: 15px;"><strong>🧟 CITY SURVIVAL</strong></div>
-        <div>• <span class="warning">GIANT ZOMBIE BUILDING ENCOUNTERS!</span></div>
+        <div>• <span class="warning">PERFECT SEPARATED CONTROLS!</span></div>
         <div>• Left joystick: Move around/Drive cars</div>
-        <div>• <span class="warning">HOLD FIRE button to aim and shoot</span></div>
-        <div>• <span class="warning">🏢 Walk near buildings → HOLD FIRE to enter</span></div>
+        <div>• <span class="warning">DRAG ANYWHERE on screen to aim (smooth!)</span></div>
+        <div>• <span class="warning">TAP FIRE button to shoot only</span></div>
+        <div>• <span class="warning">🏢 HOLD FIRE button near buildings to enter</span></div>
         <div>• <span class="warning">👹 FACE GIANT ZOMBIES inside buildings!</span></div>
-        <div>• <span class="warning">🚗 Walk near cars → HOLD FIRE to drive</span></div>
-        <div>• <span class="warning">∞ UNLIMITED AMMO</span></div>
-        <div>• <span class="warning">Full interior building exploration!</span></div>
+        <div>• <span class="warning">🚗 HOLD FIRE button near cars to drive</span></div>
+        <div>• <span class="warning">∞ UNLIMITED AMMO + Perfect control!</span></div>
         <button class="start-button" onclick="startMobileGame()">🎮 START GAME</button>
     </div>
     
@@ -724,41 +724,24 @@
             
             setupSimpleShoot() {
                 const shootButton = document.getElementById('shootButton');
+                const shootZone = document.getElementById('shootZone');
                 const aimLine = document.getElementById('aimLine');
                 const aimIndicator = document.getElementById('aimIndicator');
                 
                 let isAiming = false;
-                let aimingStartTime = 0;
                 let interactionTimer = null;
+                let lastCameraRotation = { x: 0, y: 0 };
                 
-                // IMPROVED FIRE BUTTON - Hold to aim, release to shoot!
-                const startFireButton = (e) => {
+                // SIMPLE FIRE BUTTON - Just for shooting and interactions!
+                const fireButtonPress = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     
-                    isAiming = true;
-                    aimingStartTime = Date.now();
+                    console.log('FIRE BUTTON - Shooting!');
+                    this.shoot();
                     
-                    const touch = e.touches ? e.touches[0] : e;
-                    const buttonRect = shootButton.getBoundingClientRect();
-                    const centerX = buttonRect.left + buttonRect.width / 2;
-                    const centerY = buttonRect.top + buttonRect.height / 2;
-                    
-                    // Show aim indicator at button center initially
-                    aimIndicator.style.display = 'block';
-                    aimIndicator.style.left = centerX + 'px';
-                    aimIndicator.style.top = centerY + 'px';
-                    
-                    // Show initial aim line pointing forward
-                    this.showAimLine({ x: window.innerWidth/2, y: window.innerHeight/2 }, 
-                                    { x: window.innerWidth/2, y: window.innerHeight/2 - 100 });
-                    
-                    console.log('HOLD TO AIM - Started aiming mode');
-                    
-                    // Check for interactions after holding for a while
+                    // Check for interactions with longer hold
                     interactionTimer = setTimeout(() => {
-                        if (!isAiming) return;
-                        
                         // Exit building if inside
                         if (this.insideBuilding) {
                             this.exitBuilding();
@@ -782,92 +765,124 @@
                             this.exitCar();
                             return;
                         }
-                    }, 1000); // Reduced to 1 second
+                    }, 1000);
                 };
                 
-                const moveFireButton = (e) => {
-                    if (!isAiming) return;
-                    e.preventDefault();
-                    
-                    const touch = e.touches ? e.touches[0] : e;
-                    const buttonRect = shootButton.getBoundingClientRect();
-                    const centerX = buttonRect.left + buttonRect.width / 2;
-                    const centerY = buttonRect.top + buttonRect.height / 2;
-                    
-                    // Calculate aim direction from button center to finger position
-                    const deltaX = touch.clientX - centerX;
-                    const deltaY = touch.clientY - centerY;
-                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                    
-                    // Update aim indicator position
-                    aimIndicator.style.left = touch.clientX + 'px';
-                    aimIndicator.style.top = touch.clientY + 'px';
-                    
-                    // Show aim line from screen center to aim direction
-                    const screenCenterX = window.innerWidth / 2;
-                    const screenCenterY = window.innerHeight / 2;
-                    const aimTargetX = screenCenterX + (deltaX * 2);
-                    const aimTargetY = screenCenterY + (deltaY * 2);
-                    
-                    this.showAimLine({ x: screenCenterX, y: screenCenterY }, 
-                                    { x: aimTargetX, y: aimTargetY });
-                    
-                    // Rotate camera to aim in that direction
-                    if (distance > 10) { // Only aim if moved significantly
-                        const sensitivity = 0.008;
-                        this.camera.rotation.y += deltaX * sensitivity * 0.1;
-                        this.camera.rotation.x += deltaY * sensitivity * 0.1;
-                        this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
-                    }
-                    
-                    console.log('AIMING - Direction:', deltaX.toFixed(1), deltaY.toFixed(1));
-                };
-                
-                const endFireButton = (e) => {
-                    if (!isAiming) return;
-                    e.preventDefault();
-                    
-                    const aimingDuration = Date.now() - aimingStartTime;
-                    isAiming = false;
-                    
-                    // Clear interaction timer
+                const fireButtonRelease = (e) => {
                     if (interactionTimer) {
                         clearTimeout(interactionTimer);
                         interactionTimer = null;
                     }
+                };
+                
+                // DRAG-TO-AIM SYSTEM - Much less sensitive!
+                const startAiming = (e) => {
+                    // Don't interfere with joystick
+                    const joystick = document.getElementById('moveJoystick');
+                    const joystickRect = joystick.getBoundingClientRect();
+                    const touch = e.touches ? e.touches[0] : e;
+                    
+                    // Skip if touching joystick area
+                    if (touch.clientX >= joystickRect.left - 30 && 
+                        touch.clientX <= joystickRect.right + 30 && 
+                        touch.clientY >= joystickRect.top - 30 && 
+                        touch.clientY <= joystickRect.bottom + 30) {
+                        return;
+                    }
+                    
+                    // Skip if touching fire button
+                    const buttonRect = shootButton.getBoundingClientRect();
+                    if (touch.clientX >= buttonRect.left - 20 && 
+                        touch.clientX <= buttonRect.right + 20 && 
+                        touch.clientY >= buttonRect.top - 20 && 
+                        touch.clientY <= buttonRect.bottom + 20) {
+                        return;
+                    }
+                    
+                    e.preventDefault();
+                    isAiming = true;
+                    
+                    // Store initial camera rotation
+                    lastCameraRotation = { 
+                        x: this.camera.rotation.x, 
+                        y: this.camera.rotation.y 
+                    };
+                    
+                    // Show aim indicator
+                    aimIndicator.style.display = 'block';
+                    aimIndicator.style.left = touch.clientX + 'px';
+                    aimIndicator.style.top = touch.clientY + 'px';
+                    
+                    // Show aim line from center to touch point
+                    const centerX = window.innerWidth / 2;
+                    const centerY = window.innerHeight / 2;
+                    this.showAimLine({ x: centerX, y: centerY }, 
+                                    { x: touch.clientX, y: touch.clientY });
+                    
+                    console.log('DRAG AIM - Started');
+                };
+                
+                const moveAiming = (e) => {
+                    if (!isAiming) return;
+                    e.preventDefault();
+                    
+                    const touch = e.touches ? e.touches[0] : e;
+                    
+                    // Update aim indicator
+                    aimIndicator.style.left = touch.clientX + 'px';
+                    aimIndicator.style.top = touch.clientY + 'px';
+                    
+                    // Update aim line
+                    const centerX = window.innerWidth / 2;
+                    const centerY = window.innerHeight / 2;
+                    this.showAimLine({ x: centerX, y: centerY }, 
+                                    { x: touch.clientX, y: touch.clientY });
+                    
+                    // MUCH less sensitive camera control
+                    const deltaX = touch.clientX - centerX;
+                    const deltaY = touch.clientY - centerY;
+                    
+                    const sensitivity = 0.001; // Much lower sensitivity!
+                    const targetRotationY = lastCameraRotation.y + (deltaX * sensitivity);
+                    const targetRotationX = lastCameraRotation.x + (deltaY * sensitivity);
+                    
+                    // Smooth interpolation to target rotation
+                    const lerpFactor = 0.1;
+                    this.camera.rotation.y += (targetRotationY - this.camera.rotation.y) * lerpFactor;
+                    this.camera.rotation.x += (targetRotationX - this.camera.rotation.x) * lerpFactor;
+                    this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
+                    
+                    console.log('DRAG AIM - Moving:', deltaX.toFixed(1), deltaY.toFixed(1));
+                };
+                
+                const endAiming = (e) => {
+                    if (!isAiming) return;
+                    e.preventDefault();
+                    
+                    isAiming = false;
                     
                     // Hide aim elements
                     aimLine.style.display = 'none';
                     aimIndicator.style.display = 'none';
                     
-                    // Only shoot if it was a quick aim (not a long press for interactions)
-                    if (aimingDuration < 1000) {
-                        console.log('RELEASE TO SHOOT - Firing!');
-                        this.shoot();
-                        
-                        // Optional: rapid fire for a moment
-                        let rapidFireCount = 0;
-                        const rapidFire = setInterval(() => {
-                            this.shoot();
-                            rapidFireCount++;
-                            if (rapidFireCount >= 3) {
-                                clearInterval(rapidFire);
-                            }
-                        }, 100);
-                    } else {
-                        console.log('LONG HOLD - No shooting, was aiming for interaction');
-                    }
+                    console.log('DRAG AIM - Ended');
                 };
                 
-                // Fire button events - much better control!
-                shootButton.addEventListener('touchstart', startFireButton, { passive: false });
-                shootButton.addEventListener('touchmove', moveFireButton, { passive: false });
-                shootButton.addEventListener('touchend', endFireButton, { passive: false });
+                // Fire button events - simple shooting + interactions
+                shootButton.addEventListener('touchstart', fireButtonPress, { passive: false });
+                shootButton.addEventListener('touchend', fireButtonRelease, { passive: false });
+                shootButton.addEventListener('mousedown', fireButtonPress);
+                shootButton.addEventListener('mouseup', fireButtonRelease);
+                
+                // Drag-to-aim events on the screen
+                shootZone.addEventListener('touchstart', startAiming, { passive: false });
+                shootZone.addEventListener('touchmove', moveAiming, { passive: false });
+                shootZone.addEventListener('touchend', endAiming, { passive: false });
                 
                 // Mouse events for desktop
-                shootButton.addEventListener('mousedown', startFireButton);
-                shootButton.addEventListener('mousemove', moveFireButton);
-                shootButton.addEventListener('mouseup', endFireButton);
+                shootZone.addEventListener('mousedown', startAiming);
+                document.addEventListener('mousemove', moveAiming);
+                document.addEventListener('mouseup', endAiming);
             }
             
             showAimLine(start, end) {
