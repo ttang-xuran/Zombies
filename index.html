@@ -641,6 +641,9 @@
                 
                 // SIMPLE SHOOT BUTTON
                 this.setupSimpleShoot();
+                
+                // DESKTOP KEYBOARD CONTROLS
+                this.setupKeyboardControls();
             }
             
             setupSimpleJoystick() {
@@ -734,35 +737,31 @@
                     aimIndicator.style.left = touch.clientX + 'px';
                     aimIndicator.style.top = touch.clientY + 'px';
                     
-                    // Check for interactions first
+                    // Immediate shooting - no delay
+                    this.shoot();
+                    shootTimer = setInterval(() => this.shoot(), 200);
+                    
+                    // Check for interactions with long press
                     if (this.nearBuilding) {
-                        this.enterBuilding(this.nearBuilding);
-                        return;
+                        setTimeout(() => {
+                            if (isAiming) this.enterBuilding(this.nearBuilding);
+                        }, 1000);
                     }
                     
-                    // Check for car entry
+                    // Check for car entry with long press
                     const nearCar = this.cars.find(car => car.nearPlayer && car.available);
                     if (nearCar && !this.inCar) {
-                        // Long press to enter car
-                        shootTimer = setTimeout(() => {
-                            this.enterCar(nearCar);
-                        }, 800);
-                        return;
+                        setTimeout(() => {
+                            if (isAiming) this.enterCar(nearCar);
+                        }, 1500);
                     }
                     
-                    // Check for car exit
+                    // Check for car exit with long press
                     if (this.inCar) {
-                        shootTimer = setTimeout(() => {
-                            this.exitCar();
-                        }, 800);
-                        return;
+                        setTimeout(() => {
+                            if (isAiming) this.exitCar();
+                        }, 1500);
                     }
-                    
-                    // Normal shooting
-                    shootTimer = setTimeout(() => {
-                        this.shoot();
-                        shootTimer = setInterval(() => this.shoot(), 300);
-                    }, 300);
                     
                     console.log('AIM & SHOOT STARTED');
                 };
@@ -831,6 +830,57 @@
                 shootButton.addEventListener('mousedown', startAiming);
                 document.addEventListener('mousemove', moveAiming);
                 document.addEventListener('mouseup', endAiming);
+            }
+            
+            setupKeyboardControls() {
+                const keyState = {};
+                
+                document.addEventListener('keydown', (e) => {
+                    keyState[e.code] = true;
+                    
+                    // Shooting
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        this.shoot();
+                    }
+                });
+                
+                document.addEventListener('keyup', (e) => {
+                    keyState[e.code] = false;
+                });
+                
+                // Update movement based on keys
+                const updateKeyboardMovement = () => {
+                    let x = 0, z = 0;
+                    
+                    // WASD movement
+                    if (keyState['KeyW'] || keyState['ArrowUp']) z = 1;
+                    if (keyState['KeyS'] || keyState['ArrowDown']) z = -1;
+                    if (keyState['KeyA'] || keyState['ArrowLeft']) x = 1;
+                    if (keyState['KeyD'] || keyState['ArrowRight']) x = -1;
+                    
+                    // Update move vector for keyboard
+                    this.moveVector = { x: x, z: z };
+                    
+                    requestAnimationFrame(updateKeyboardMovement);
+                };
+                
+                updateKeyboardMovement();
+                
+                // Mouse look for desktop
+                document.addEventListener('mousemove', (e) => {
+                    if (document.pointerLockElement === this.canvas) {
+                        const sensitivity = 0.002;
+                        this.camera.rotation.y += e.movementX * sensitivity;
+                        this.camera.rotation.x += e.movementY * sensitivity;
+                        this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
+                    }
+                });
+                
+                // Click to enable pointer lock for mouse look
+                this.canvas.addEventListener('click', () => {
+                    this.canvas.requestPointerLock();
+                });
             }
             
             createMobileZombie() {
@@ -1104,7 +1154,8 @@
                     forward.y = 0;
                     const right = BABYLON.Vector3.Cross(forward, BABYLON.Vector3.Up()).normalize();
                     
-                    const moveDirection = forward.scale(this.moveVector.z).add(right.scale(this.moveVector.x));
+                    // Fix direction - reverse X axis to match joystick movement
+                    const moveDirection = forward.scale(this.moveVector.z).add(right.scale(-this.moveVector.x));
                     this.camera.position.addInPlace(moveDirection.scale(speed));
                 }
                 
@@ -1128,9 +1179,9 @@
                     if (Math.abs(this.carSpeed) < 0.01) this.carSpeed = 0;
                 }
                 
-                // Turn the car
+                // Turn the car - fix direction
                 if (this.moveVector.x !== 0 && Math.abs(this.carSpeed) > 0.1) {
-                    this.currentCar.group.rotation.y += this.moveVector.x * 0.03 * (this.carSpeed / maxSpeed);
+                    this.currentCar.group.rotation.y += -this.moveVector.x * 0.03 * (this.carSpeed / maxSpeed);
                 }
                 
                 // Move car forward/backward
