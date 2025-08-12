@@ -1371,10 +1371,12 @@
                 if (this.moveVector.x !== 0 || this.moveVector.z !== 0) {
                     const forward = this.camera.getForwardRay().direction.clone();
                     forward.y = 0;
-                    const right = BABYLON.Vector3.Cross(forward, BABYLON.Vector3.Up()).normalize();
+                    const right = BABYLON.Vector3.Cross(BABYLON.Vector3.Up(), forward).normalize(); // Fixed cross product order
                     
-                    // Movement direction fixed at joystick level
+                    // Movement direction with correct left/right
                     const moveDirection = forward.scale(this.moveVector.z).add(right.scale(this.moveVector.x));
+                    
+                    console.log('KEYBOARD MOVEMENT - moveVector.x:', this.moveVector.x, 'moveVector.z:', this.moveVector.z);
                     this.camera.position.addInPlace(moveDirection.scale(speed));
                 }
                 
