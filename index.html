@@ -280,14 +280,14 @@
     
     <div id="instructions">
         <div style="font-size: 24px; margin-bottom: 15px;"><strong>🧟 CITY SURVIVAL</strong></div>
-        <div>• <span class="warning">PERFECT SEPARATED CONTROLS!</span></div>
+        <div>• <span class="warning">ULTRA-SMOOTH AIMING SYSTEM!</span></div>
         <div>• Left joystick: Move around/Drive cars</div>
-        <div>• <span class="warning">DRAG ANYWHERE on screen to aim (smooth!)</span></div>
-        <div>• <span class="warning">TAP FIRE button to shoot only</span></div>
+        <div>• <span class="warning">DRAG on screen: Ultra-precise aiming with deadzone</span></div>
+        <div>• <span class="warning">TAP FIRE button: Shoot only (no aiming)</span></div>
         <div>• <span class="warning">🏢 HOLD FIRE button near buildings to enter</span></div>
         <div>• <span class="warning">👹 FACE GIANT ZOMBIES inside buildings!</span></div>
         <div>• <span class="warning">🚗 HOLD FIRE button near cars to drive</span></div>
-        <div>• <span class="warning">∞ UNLIMITED AMMO + Perfect control!</span></div>
+        <div>• <span class="warning">Perfect low-sensitivity professional controls!</span></div>
         <button class="start-button" onclick="startMobileGame()">🎮 START GAME</button>
     </div>
     
@@ -838,21 +838,42 @@
                     this.showAimLine({ x: centerX, y: centerY }, 
                                     { x: touch.clientX, y: touch.clientY });
                     
-                    // MUCH less sensitive camera control
+                    // ULTRA LOW SENSITIVITY with deadzone and screen normalization
                     const deltaX = touch.clientX - centerX;
                     const deltaY = touch.clientY - centerY;
                     
-                    const sensitivity = 0.001; // Much lower sensitivity!
-                    const targetRotationY = lastCameraRotation.y + (deltaX * sensitivity);
-                    const targetRotationX = lastCameraRotation.x + (deltaY * sensitivity);
+                    // Normalize by screen size (convert to -1 to 1 range)
+                    const normalizedX = deltaX / (window.innerWidth / 2);
+                    const normalizedY = deltaY / (window.innerHeight / 2);
                     
-                    // Smooth interpolation to target rotation
-                    const lerpFactor = 0.1;
+                    // Add deadzone - ignore tiny movements
+                    const deadzone = 0.1; // 10% of screen
+                    const adjustedX = Math.abs(normalizedX) > deadzone ? normalizedX - Math.sign(normalizedX) * deadzone : 0;
+                    const adjustedY = Math.abs(normalizedY) > deadzone ? normalizedY - Math.sign(normalizedY) * deadzone : 0;
+                    
+                    // ULTRA low sensitivity - 10x lower than before
+                    const baseSensitivity = 0.00005;
+                    
+                    // Acceleration curve - slower for small movements, faster for large
+                    const accelerationX = Math.abs(adjustedX) * 2; // More acceleration for larger movements
+                    const accelerationY = Math.abs(adjustedY) * 2;
+                    
+                    const finalSensitivityX = baseSensitivity * (1 + accelerationX);
+                    const finalSensitivityY = baseSensitivity * (1 + accelerationY);
+                    
+                    const targetRotationY = lastCameraRotation.y + (adjustedX * finalSensitivityX);
+                    const targetRotationX = lastCameraRotation.x + (adjustedY * finalSensitivityY);
+                    
+                    // Much slower interpolation for smoother movement
+                    const lerpFactor = 0.03; // Even slower lerp
                     this.camera.rotation.y += (targetRotationY - this.camera.rotation.y) * lerpFactor;
                     this.camera.rotation.x += (targetRotationX - this.camera.rotation.x) * lerpFactor;
                     this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
                     
-                    console.log('DRAG AIM - Moving:', deltaX.toFixed(1), deltaY.toFixed(1));
+                    // Only log significant movements
+                    if (Math.abs(adjustedX) > 0 || Math.abs(adjustedY) > 0) {
+                        console.log('SMOOTH AIM - Normalized:', normalizedX.toFixed(3), normalizedY.toFixed(3));
+                    }
                 };
                 
                 const endAiming = (e) => {
