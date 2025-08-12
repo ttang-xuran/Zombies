@@ -829,14 +829,15 @@
             updateMovement() {
                 if (!this.gameStarted) return;
                 
-                // SIMPLE MOVEMENT - GUARANTEED TO WORK
+                // SIMPLE MOVEMENT - FIXED DIRECTION
                 const speed = 0.6;
                 if (this.moveVector.x !== 0 || this.moveVector.z !== 0) {
                     const forward = this.camera.getForwardRay().direction.clone();
                     forward.y = 0;
                     const right = BABYLON.Vector3.Cross(forward, BABYLON.Vector3.Up()).normalize();
                     
-                    const moveDirection = forward.scale(-this.moveVector.z).add(right.scale(this.moveVector.x));
+                    // Fixed movement direction - now moves correctly
+                    const moveDirection = forward.scale(this.moveVector.z).add(right.scale(this.moveVector.x));
                     this.camera.position.addInPlace(moveDirection.scale(speed));
                     
                     console.log('PLAYER MOVING:', moveDirection.x.toFixed(2), moveDirection.z.toFixed(2));
