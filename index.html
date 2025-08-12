@@ -280,14 +280,14 @@
     
     <div id="instructions">
         <div style="font-size: 24px; margin-bottom: 15px;"><strong>🧟 CITY SURVIVAL</strong></div>
-        <div>• <span class="warning">INTUITIVE TAP-TO-AIM SHOOTING!</span></div>
+        <div>• <span class="warning">UNLIMITED BULLETS + TAP-TO-AIM!</span></div>
         <div>• Left joystick: Move around/Drive cars</div>
         <div>• <span class="warning">TAP ANYWHERE to aim and shoot in that direction</span></div>
-        <div>• <span class="warning">See yellow aim line from center to target!</span></div>
+        <div>• <span class="warning">∞ UNLIMITED AMMO - Shoot as much as you want!</span></div>
         <div>• Red FIRE button: Quick forward shooting</div>
         <div>• <span class="warning">🏫 School, 🚓 Police Station, 🚌 Bus Station</span></div>
         <div>• <span class="warning">🚗 Pick up cars on the street and drive!</span></div>
-        <div>• <span class="warning">Most intuitive shooting system ever!</span></div>
+        <div>• <span class="warning">Non-stop zombie action!</span></div>
         <button class="start-button" onclick="startMobileGame()">🎮 START GAME</button>
     </div>
     
@@ -320,7 +320,7 @@
                 
                 // Game state
                 this.health = 100;
-                this.ammo = 30;
+                this.ammo = "∞"; // Unlimited ammo display
                 this.kills = 0;
                 this.gameStarted = false;
                 this.lastShot = 0;
@@ -1052,14 +1052,15 @@
             }
             
             shoot() {
-                console.log('SHOOT CALLED - Ammo:', this.ammo, 'Cooldown check:', Date.now() - this.lastShot);
-                if (this.ammo <= 0 || Date.now() - this.lastShot < this.shotCooldown) {
-                    console.log('SHOOT BLOCKED - Ammo:', this.ammo, 'Cooldown:', Date.now() - this.lastShot);
+                console.log('SHOOT CALLED - Unlimited ammo mode');
+                // Check only cooldown, ignore ammo
+                if (Date.now() - this.lastShot < this.shotCooldown) {
                     return;
                 }
                 
                 this.lastShot = Date.now();
-                this.ammo--;
+                // Don't decrease ammo - unlimited bullets!
+                // this.ammo--; // Commented out for unlimited ammo
                 this.updateUI();
                 
                 console.log('SHOOTING! Creating bullet...');
