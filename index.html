@@ -1,86 +1,208 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TRULY GROUNDED REALISTIC ZOMBIES</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Mobile Zombie Survival Game</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+        
+        * {
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
         
         body { 
             margin: 0; 
             padding: 0; 
             overflow: hidden; 
             background: #000;
-            cursor: crosshair;
             font-family: 'Creepster', cursive;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
         }
+        
         #renderCanvas { 
             width: 100vw; 
             height: 100vh; 
             display: block;
+            touch-action: none;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
+        
         #ui { 
-            position: absolute; 
-            top: 20px; 
-            left: 20px; 
+            position: fixed; 
+            top: 10px; 
+            left: 10px; 
             color: #ff0000; 
             background: linear-gradient(135deg, rgba(20,0,0,0.95), rgba(40,10,10,0.9)); 
-            padding: 25px; 
-            border: 3px solid #ff0000;
-            border-radius: 20px;
-            font-size: 18px;
+            padding: 15px; 
+            border: 2px solid #ff0000;
+            border-radius: 10px;
+            font-size: 14px;
             font-weight: bold;
             z-index: 1000; 
-            box-shadow: 0 0 30px rgba(255,0,0,0.5);
-            text-shadow: 0 0 8px #ff0000;
+            box-shadow: 0 0 20px rgba(255,0,0,0.5);
+            text-shadow: 0 0 5px #ff0000;
+            pointer-events: none;
         }
+        
         .ui-row {
             display: flex;
             justify-content: space-between;
-            margin: 10px 0;
-            min-width: 280px;
+            margin: 5px 0;
+            min-width: 120px;
             align-items: center;
         }
-        #crosshair {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
+        
+        #mobileControls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            z-index: 1001;
             pointer-events: none;
-            z-index: 1000;
         }
-        #crosshair::before, #crosshair::after {
-            content: '';
+        
+        .joystick {
             position: absolute;
-            background: #ff0000;
-            box-shadow: 0 0 15px #ff0000;
-        }
-        #crosshair::before {
-            width: 20px;
-            height: 2px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        #crosshair::after {
-            width: 2px;
-            height: 20px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        #instructions {
-            position: absolute;
+            width: 120px;
+            height: 120px;
             bottom: 20px;
             left: 20px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 4px solid rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            pointer-events: all;
+            touch-action: none;
+            -webkit-touch-callout: none;
+        }
+        
+        .joystick-handle {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: none;
+            pointer-events: none;
+        }
+        
+        .shoot-button {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            bottom: 30px;
+            right: 20px;
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            border: 4px solid #ffffff;
+            border-radius: 50%;
+            color: white;
+            font-family: 'Creepster', cursive;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: all;
+            touch-action: none;
+            box-shadow: 0 0 25px rgba(255, 68, 68, 0.7);
+            -webkit-touch-callout: none;
+        }
+        
+        .look-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 70%;
+            z-index: 999;
+            pointer-events: all;
+            touch-action: none;
+            -webkit-touch-callout: none;
+        }
+        
+        #instructions {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             color: #ffffff;
             background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(60,20,20,0.9));
-            padding: 20px;
-            border: 2px solid #ff6600;
-            border-radius: 15px;
+            padding: 25px;
+            border: 3px solid #ff6600;
+            border-radius: 20px;
             font-size: 16px;
-            z-index: 1000;
+            text-align: center;
+            z-index: 2000;
+            max-width: 90vw;
+        }
+        
+        #instructions.hidden {
+            display: none;
+        }
+        
+        .start-button {
+            background: linear-gradient(135deg, #ff6600, #cc4400);
+            border: 2px solid #ffffff;
+            color: white;
+            padding: 15px 30px;
+            font-family: 'Creepster', cursive;
+            font-size: 18px;
+            border-radius: 10px;
+            margin-top: 20px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 102, 0, 0.5);
+            touch-action: manipulation;
+        }
+        
+        .warning {
+            color: #ff0000;
+            font-weight: bold;
+            text-shadow: 0 0 8px #ff0000;
+        }
+        
+        @media (max-width: 480px) {
+            #ui {
+                font-size: 12px;
+                padding: 10px;
+                top: 5px;
+                left: 5px;
+            }
+            .joystick {
+                width: 100px;
+                height: 100px;
+                bottom: 15px;
+                left: 15px;
+            }
+            .joystick-handle {
+                width: 40px;
+                height: 40px;
+            }
+            .shoot-button {
+                width: 80px;
+                height: 80px;
+                right: 15px;
+                bottom: 25px;
+                font-size: 14px;
+            }
         }
     </style>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
@@ -91,40 +213,53 @@
     
     <div id="ui">
         <div class="ui-row">
-            <span>❤️ HEALTH:</span>
+            <span>❤️</span>
             <span id="health" style="color: #ff4444;">100</span>
         </div>
         <div class="ui-row">
-            <span>🔫 AMMO:</span>
+            <span>🔫</span>
             <span id="ammo" style="color: #ffff44;">30</span>
         </div>
         <div class="ui-row">
-            <span>💀 KILLS:</span>
+            <span>💀</span>
             <span id="kills" style="color: #ff6666;">0</span>
         </div>
         <div class="ui-row">
-            <span>🧟 ZOMBIES:</span>
+            <span>🧟</span>
             <span id="zombieCount" style="color: #ff6600;">0</span>
         </div>
     </div>
     
-    <div id="crosshair"></div>
-    
     <div id="instructions">
-        <div style="font-size: 20px; margin-bottom: 10px;"><strong>🚶 GROUND WALKING ZOMBIES</strong></div>
-        <div>• Click to start ground-based survival</div>
-        <div>• WASD: Walk ON the ground (not fly)</div>
-        <div>• Mouse: Look around</div>
-        <div>• Left Click: Shoot walking zombies</div>
-        <div>• F: Toggle flashlight</div>
-        <div style="color: #ff0000;">• NO FLYING - Everything walks!</div>
+        <div style="font-size: 24px; margin-bottom: 15px;"><strong>🧟 ZOMBIE SURVIVAL</strong></div>
+        <div>• <span class="warning">Mobile-optimized zombie game</span></div>
+        <div>• Left joystick: Move around</div>
+        <div>• Touch upper screen: Look around</div>
+        <div>• Red button: Shoot zombies</div>
+        <div>• <span class="warning">Survive the undead horde!</span></div>
+        <button class="start-button" onclick="startMobileGame()">🎮 START GAME</button>
     </div>
+    
+    <!-- Mobile Controls -->
+    <div id="mobileControls">
+        <div class="joystick" id="moveJoystick">
+            <div class="joystick-handle" id="moveHandle"></div>
+        </div>
+        <div class="shoot-button" id="shootButton">🔥<br>FIRE</div>
+    </div>
+    
+    <!-- Look control area -->
+    <div class="look-area" id="lookArea"></div>
 
     <script>
-        class TrulyGroundedGame {
+        class MobileZombieGame {
             constructor() {
                 this.canvas = document.getElementById("renderCanvas");
-                this.engine = new BABYLON.Engine(this.canvas, true);
+                this.engine = new BABYLON.Engine(this.canvas, true, {
+                    antialias: true,
+                    preserveDrawingBuffer: true
+                });
+                
                 this.scene = null;
                 this.camera = null;
                 this.zombies = [];
@@ -133,29 +268,28 @@
                 this.health = 100;
                 this.ammo = 30;
                 this.kills = 0;
-                this.isPointerLocked = false;
                 this.gameStarted = false;
                 this.lastShot = 0;
-                this.shotCooldown = 150;
+                this.shotCooldown = 200;
                 
-                // Input
-                this.inputMap = {};
+                // Mobile input
+                this.moveVector = { x: 0, z: 0 };
+                this.lookDelta = { x: 0, y: 0 };
+                this.isShooting = false;
                 
-                // Ground level tracking
+                // Ground tracking
                 this.groundLevel = 0;
                 this.playerHeight = 1.7;
                 
                 this.init();
             }
             
-            async init() {
+            init() {
                 this.createScene();
-                this.setupPhysics();
                 this.createCamera();
                 this.createLighting();
                 this.createEnvironment();
-                this.setupInput();
-                this.startGame();
+                this.setupMobileControls();
                 this.gameLoop();
                 
                 window.addEventListener("resize", () => {
@@ -165,73 +299,44 @@
             
             createScene() {
                 this.scene = new BABYLON.Scene(this.engine);
-                
-                // Bright scene for visibility
                 this.scene.ambientColor = new BABYLON.Color3(0.6, 0.55, 0.55);
-                
-                // Light fog
                 this.scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
-                this.scene.fogColor = new BABYLON.Color3(0.2, 0.15, 0.15);
-                this.scene.fogDensity = 0.001;
-            }
-            
-            setupPhysics() {
-                // Enable physics
-                this.scene.enablePhysics(new BABYLON.Vector3(0, -9.81, 0), new BABYLON.CannonJSPlugin());
+                this.scene.fogColor = new BABYLON.Color3(0.15, 0.1, 0.1);
+                this.scene.fogDensity = 0.002;
             }
             
             createCamera() {
-                // CRITICAL: Camera EXACTLY at walking height above ground
                 this.camera = new BABYLON.FreeCamera("camera", 
                     new BABYLON.Vector3(0, this.playerHeight, 0), this.scene);
                 this.camera.setTarget(new BABYLON.Vector3(0, this.playerHeight, 10));
-                
-                // PREVENT FLYING - Lock camera to ground level + player height
-                this.camera.position.y = this.playerHeight;
-                
-                this.camera.speed = 0.5; // Slower, more realistic movement
-                this.camera.angularSensibility = 2000;
+                this.camera.speed = 0.6;
             }
             
             createLighting() {
-                // Very bright lighting
                 const ambientLight = new BABYLON.HemisphericLight("ambient", 
                     new BABYLON.Vector3(0, 1, 0), this.scene);
-                ambientLight.intensity = 1.2;
-                ambientLight.diffuse = new BABYLON.Color3(1, 0.9, 0.9);
+                ambientLight.intensity = 1.0;
+                ambientLight.diffuse = new BABYLON.Color3(0.9, 0.8, 0.8);
                 
-                // Strong directional light
                 const dirLight = new BABYLON.DirectionalLight("dirLight", 
-                    new BABYLON.Vector3(-0.5, -1, -0.5), this.scene);
-                dirLight.intensity = 2;
-                dirLight.diffuse = new BABYLON.Color3(1, 1, 0.95);
-                
-                // Flashlight
-                this.flashlight = new BABYLON.SpotLight("flashlight", 
-                    this.camera.position, 
-                    this.camera.getForwardRay().direction, 
-                    Math.PI / 1.5, 2, this.scene);
-                this.flashlight.intensity = 15;
-                this.flashlight.diffuse = new BABYLON.Color3(1, 1, 1);
-                this.flashlight.range = 100;
-                this.flashlight.parent = this.camera;
+                    new BABYLON.Vector3(-0.4, -1, -0.4), this.scene);
+                dirLight.intensity = 1.8;
+                dirLight.diffuse = new BABYLON.Color3(1, 0.9, 0.8);
             }
             
             createEnvironment() {
-                // Large visible ground
                 const ground = BABYLON.MeshBuilder.CreateGround("ground", 
                     {width: 1000, height: 1000}, this.scene);
-                ground.position.y = this.groundLevel; // Exactly at ground level
+                ground.position.y = this.groundLevel;
                 
                 const groundMaterial = new BABYLON.StandardMaterial("groundMat", this.scene);
-                groundMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.45, 0.4);
+                groundMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.4, 0.3);
                 ground.material = groundMaterial;
                 
-                // Buildings ON the ground
-                this.createGroundedBuildings();
+                this.createBuildings();
             }
             
-            createGroundedBuildings() {
+            createBuildings() {
                 const buildings = [
                     {pos: [-100, 0, -80], size: [40, 30, 45]},
                     {pos: [95, 0, -75], size: [35, 40, 40]},
@@ -246,102 +351,187 @@
                         depth: config.size[2]
                     }, this.scene);
                     
-                    // Place building ON ground (half height above ground level)
                     building.position.set(config.pos[0], this.groundLevel + config.size[1]/2, config.pos[2]);
                     
                     const material = new BABYLON.StandardMaterial(`buildingMat${i}`, this.scene);
-                    material.diffuseColor = new BABYLON.Color3(0.5, 0.45, 0.4);
+                    material.diffuseColor = new BABYLON.Color3(0.4, 0.35, 0.3);
                     building.material = material;
                 });
             }
             
-            setupInput() {
-                this.scene.onPointerObservable.add((pointerInfo) => {
-                    if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
-                        if (!this.isPointerLocked) {
-                            this.canvas.requestPointerLock();
-                        } else {
-                            this.shoot();
-                        }
-                    }
-                });
+            setupMobileControls() {
+                // Movement joystick
+                this.setupJoystick();
                 
-                document.addEventListener('pointerlockchange', () => {
-                    this.isPointerLocked = document.pointerLockElement === this.canvas;
-                    if (this.isPointerLocked && !this.gameStarted) {
-                        this.gameStarted = true;
-                        setTimeout(() => this.spawnWalkingZombies(), 3000);
-                    }
-                });
+                // Look controls (touch upper screen)
+                this.setupLookControls();
                 
-                this.scene.onPointerObservable.add((pointerInfo) => {
-                    if (this.isPointerLocked && pointerInfo.type === BABYLON.PointerEventTypes.POINTERMOVE) {
-                        const deltaX = pointerInfo.event.movementX || 0;
-                        const deltaY = pointerInfo.event.movementY || 0;
-                        
-                        this.camera.rotation.y += deltaX * 0.002;
-                        this.camera.rotation.x += deltaY * 0.002;
-                        this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
-                    }
-                });
-                
-                this.scene.actionManager = new BABYLON.ActionManager(this.scene);
-                
-                const keys = ['w', 'a', 's', 'd', 'Escape', 'f', 'Shift'];
-                keys.forEach(key => {
-                    this.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
-                        BABYLON.ActionManager.OnKeyDownTrigger, (evt) => {
-                        if (evt.sourceEvent.key.toLowerCase() === key.toLowerCase()) {
-                            this.inputMap[key] = true;
-                        }
-                    }));
-                    
-                    this.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
-                        BABYLON.ActionManager.OnKeyUpTrigger, (evt) => {
-                        if (evt.sourceEvent.key.toLowerCase() === key.toLowerCase()) {
-                            this.inputMap[key] = false;
-                        }
-                    }));
-                });
+                // Shoot button
+                this.setupShootButton();
             }
             
-            createHumanoidZombie() {
-                console.log("Creating truly humanoid zombie...");
+            setupJoystick() {
+                const joystick = document.getElementById('moveJoystick');
+                const handle = document.getElementById('moveHandle');
+                let isDragging = false;
+                let joystickRect;
+                let center;
                 
-                // Container for zombie
-                const zombieGroup = new BABYLON.TransformNode("humanoidZombie", this.scene);
+                const startTouch = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isDragging = true;
+                    joystickRect = joystick.getBoundingClientRect();
+                    center = {
+                        x: joystickRect.left + joystickRect.width / 2,
+                        y: joystickRect.top + joystickRect.height / 2
+                    };
+                    console.log('Joystick started');
+                };
                 
-                // REALISTIC HUMAN TORSO - Cylindrical like actual human body
+                const moveTouch = (e) => {
+                    if (!isDragging) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const touch = e.touches && e.touches.length > 0 ? e.touches[0] : e;
+                    const deltaX = touch.clientX - center.x;
+                    const deltaY = touch.clientY - center.y;
+                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    const maxDistance = 40;
+                    
+                    if (distance <= maxDistance) {
+                        handle.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+                        this.moveVector.x = deltaX / maxDistance;
+                        this.moveVector.z = deltaY / maxDistance;
+                    } else {
+                        const angle = Math.atan2(deltaY, deltaX);
+                        const limitedX = Math.cos(angle) * maxDistance;
+                        const limitedY = Math.sin(angle) * maxDistance;
+                        handle.style.transform = `translate(calc(-50% + ${limitedX}px), calc(-50% + ${limitedY}px))`;
+                        this.moveVector.x = limitedX / maxDistance;
+                        this.moveVector.z = limitedY / maxDistance;
+                    }
+                };
+                
+                const endTouch = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isDragging = false;
+                    handle.style.transform = 'translate(-50%, -50%)';
+                    this.moveVector.x = 0;
+                    this.moveVector.z = 0;
+                    console.log('Joystick ended');
+                };
+                
+                // Touch events for mobile - using passive: false to allow preventDefault
+                joystick.addEventListener('touchstart', startTouch, { passive: false });
+                joystick.addEventListener('touchmove', moveTouch, { passive: false });
+                joystick.addEventListener('touchend', endTouch, { passive: false });
+                joystick.addEventListener('touchcancel', endTouch, { passive: false });
+                
+                // Mouse events for desktop fallback
+                joystick.addEventListener('mousedown', startTouch);
+                document.addEventListener('mousemove', moveTouch);
+                document.addEventListener('mouseup', endTouch);
+            }
+            
+            setupLookControls() {
+                const lookArea = document.getElementById('lookArea');
+                let lastTouch = null;
+                let isLooking = false;
+                
+                const startLook = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isLooking = true;
+                    const touch = e.touches && e.touches.length > 0 ? e.touches[0] : e;
+                    lastTouch = { x: touch.clientX, y: touch.clientY };
+                    console.log('Look started');
+                };
+                
+                const moveLook = (e) => {
+                    if (!lastTouch || !isLooking) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const touch = e.touches && e.touches.length > 0 ? e.touches[0] : e;
+                    const deltaX = touch.clientX - lastTouch.x;
+                    const deltaY = touch.clientY - lastTouch.y;
+                    
+                    // Apply look rotation
+                    this.camera.rotation.y += deltaX * 0.003;
+                    this.camera.rotation.x += deltaY * 0.003;
+                    this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
+                    
+                    lastTouch = { x: touch.clientX, y: touch.clientY };
+                };
+                
+                const endLook = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isLooking = false;
+                    lastTouch = null;
+                    console.log('Look ended');
+                };
+                
+                // Touch events for look controls
+                lookArea.addEventListener('touchstart', startLook, { passive: false });
+                lookArea.addEventListener('touchmove', moveLook, { passive: false });
+                lookArea.addEventListener('touchend', endLook, { passive: false });
+                lookArea.addEventListener('touchcancel', endLook, { passive: false });
+                
+                // Mouse events for desktop
+                lookArea.addEventListener('mousedown', startLook);
+                lookArea.addEventListener('mousemove', moveLook);
+                lookArea.addEventListener('mouseup', endLook);
+            }
+            
+            setupShootButton() {
+                const shootButton = document.getElementById('shootButton');
+                
+                const shoot = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.shoot();
+                    console.log('Shooting');
+                };
+                
+                // Touch events for shoot button
+                shootButton.addEventListener('touchstart', shoot, { passive: false });
+                shootButton.addEventListener('mousedown', shoot, { passive: false });
+            }
+            
+            createMobileZombie() {
+                const zombieGroup = new BABYLON.TransformNode("mobileZombie", this.scene);
+                
                 const torso = BABYLON.MeshBuilder.CreateCylinder("zombieTorso", {
                     height: 3.2, diameterTop: 1.8, diameterBottom: 1.4, tessellation: 16
                 }, this.scene);
-                torso.position.y = 1.6; // Half height above ground
+                torso.position.y = 1.6;
                 torso.parent = zombieGroup;
                 
-                // DECAYED HUMAN HEAD - More realistic skull shape
                 const head = BABYLON.MeshBuilder.CreateSphere("zombieHead", {
                     diameter: 1.1, segments: 20
                 }, this.scene);
-                head.position.y = 3.8; // On top of torso
-                head.scaling.set(0.9, 1.05, 0.95); // More realistic human head proportions
+                head.position.y = 3.8;
+                head.scaling.set(0.9, 1.05, 0.95);
                 head.parent = zombieGroup;
                 
-                // HUMAN ARMS - Hanging naturally like decayed human
                 const leftArm = BABYLON.MeshBuilder.CreateCylinder("leftArm", {
                     height: 2.2, diameter: 0.35, tessellation: 12
                 }, this.scene);
                 leftArm.position.set(-1.2, 2.5, 0.1);
-                leftArm.rotation.set(0.2, 0, 0.4); // Slightly forward like zombie reach
+                leftArm.rotation.set(0.2, 0, 0.4);
                 leftArm.parent = zombieGroup;
                 
                 const rightArm = BABYLON.MeshBuilder.CreateCylinder("rightArm", {
                     height: 2.2, diameter: 0.35, tessellation: 12
                 }, this.scene);
                 rightArm.position.set(1.2, 2.5, 0.1);
-                rightArm.rotation.set(0.2, 0, -0.4); // Slightly forward like zombie reach
+                rightArm.rotation.set(0.2, 0, -0.4);
                 rightArm.parent = zombieGroup;
                 
-                // HUMAN LEGS - Standing upright
                 const leftLeg = BABYLON.MeshBuilder.CreateCylinder("leftLeg", {
                     height: 3.2, diameter: 0.45, tessellation: 12
                 }, this.scene);
@@ -354,76 +544,70 @@
                 rightLeg.position.set(0.4, -1.6, 0);
                 rightLeg.parent = zombieGroup;
                 
-                // REALISTIC ZOMBIE MATERIALS - Decayed human appearance
+                // Materials
                 const fleshMaterial = new BABYLON.StandardMaterial("zombieFleshMat", this.scene);
-                fleshMaterial.diffuseColor = new BABYLON.Color3(0.7, 0.6, 0.5); // Decayed flesh color
-                fleshMaterial.emissiveColor = new BABYLON.Color3(0.1, 0.06, 0.04); // Slight glow for visibility
+                fleshMaterial.diffuseColor = new BABYLON.Color3(0.7, 0.6, 0.5);
+                fleshMaterial.emissiveColor = new BABYLON.Color3(0.1, 0.06, 0.04);
                 
                 const clothingMaterial = new BABYLON.StandardMaterial("zombieClothingMat", this.scene);
-                clothingMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.3, 0.25); // Torn/dirty clothes
-                clothingMaterial.emissiveColor = new BABYLON.Color3(0.05, 0.03, 0.02); // Slight glow
+                clothingMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.3, 0.25);
+                clothingMaterial.emissiveColor = new BABYLON.Color3(0.05, 0.03, 0.02);
                 
-                // Apply materials like a real decayed human
                 head.material = fleshMaterial;
                 leftArm.material = fleshMaterial;
                 rightArm.material = fleshMaterial;
-                leftLeg.material = clothingMaterial; // Pants/clothing
+                leftLeg.material = clothingMaterial;
                 rightLeg.material = clothingMaterial;
-                torso.material = clothingMaterial; // Shirt/clothing
+                torso.material = clothingMaterial;
                 
-                // BRIGHT ZOMBIE EYES
-                const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", {diameter: 0.15}, this.scene);
-                leftEye.position.set(-0.25, 0.15, -0.45);
+                // Eyes
+                const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", {diameter: 0.18}, this.scene);
+                leftEye.position.set(-0.28, 0.12, -0.48);
                 leftEye.parent = head;
                 
-                const rightEye = BABYLON.MeshBuilder.CreateSphere("rightEye", {diameter: 0.15}, this.scene);
-                rightEye.position.set(0.25, 0.15, -0.45);
+                const rightEye = BABYLON.MeshBuilder.CreateSphere("rightEye", {diameter: 0.18}, this.scene);
+                rightEye.position.set(0.28, 0.12, -0.48);
                 rightEye.parent = head;
                 
                 const eyeMaterial = new BABYLON.StandardMaterial("zombieEyes", this.scene);
-                eyeMaterial.emissiveColor = new BABYLON.Color3(4, 0.5, 0.1); // Ultra bright red
-                eyeMaterial.diffuseColor = new BABYLON.Color3(2, 0.2, 0.1);
+                eyeMaterial.diffuseColor = new BABYLON.Color3(0.9, 0.85, 0.8);
+                eyeMaterial.emissiveColor = new BABYLON.Color3(0.3, 0.1, 0.05);
                 
                 leftEye.material = eyeMaterial;
                 rightEye.material = eyeMaterial;
                 
-                // Position zombie ON GROUND
+                // Position zombie
                 const angle = Math.random() * Math.PI * 2;
-                const distance = 50 + Math.random() * 80;
+                const distance = 40 + Math.random() * 60;
                 zombieGroup.position.x = this.camera.position.x + Math.cos(angle) * distance;
                 zombieGroup.position.z = this.camera.position.z + Math.sin(angle) * distance;
-                zombieGroup.position.y = this.groundLevel; // EXACTLY on ground
+                zombieGroup.position.y = this.groundLevel;
                 
-                // Zombie data with all body parts
                 const zombieData = {
                     group: zombieGroup,
                     mesh: torso,
                     health: 100,
-                    speed: 0.15,
+                    speed: 0.08,
                     lastAttack: 0,
                     id: this.zombies.length,
                     parts: { head, torso, leftArm, rightArm, leftLeg, rightLeg },
-                    animationTime: Math.random() * Math.PI * 2,
-                    height: 5.5
+                    animationTime: Math.random() * Math.PI * 2
                 };
                 
                 this.zombies.push(zombieData);
                 this.updateUI();
                 
-                console.log(`Humanoid zombie spawned at ground level! Total: ${this.zombies.length}`);
                 return zombieData;
             }
             
-            spawnWalkingZombies() {
-                // Spawn several walking zombies
-                for (let i = 0; i < 4; i++) {
-                    setTimeout(() => this.createHumanoidZombie(), i * 2000);
+            spawnMobileZombies() {
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => this.createMobileZombie(), i * 2000);
                 }
                 
-                // Continue spawning
                 setInterval(() => {
-                    if (this.zombies.length < 6 && this.gameStarted) {
-                        this.createHumanoidZombie();
+                    if (this.zombies.length < 5 && this.gameStarted) {
+                        this.createMobileZombie();
                     }
                 }, 10000);
             }
@@ -435,10 +619,6 @@
                 this.ammo--;
                 this.updateUI();
                 
-                // Shooting effects
-                this.createMuzzleFlash();
-                
-                // Raycast for hits
                 const ray = new BABYLON.Ray(this.camera.position, this.camera.getForwardRay().direction);
                 const hit = this.scene.pickWithRay(ray, (mesh) => {
                     return this.zombies.some(zombie => 
@@ -447,7 +627,7 @@
                     );
                 });
                 
-                if (hit.hit && hit.distance < 200) {
+                if (hit.hit && hit.distance < 150) {
                     const hitZombie = this.zombies.find(zombie => 
                         Object.values(zombie.parts).includes(hit.pickedMesh) || 
                         zombie.mesh === hit.pickedMesh
@@ -459,24 +639,9 @@
                 }
             }
             
-            createMuzzleFlash() {
-                const flash = BABYLON.MeshBuilder.CreateSphere("muzzleFlash", {diameter: 3}, this.scene);
-                flash.position = this.camera.position.add(this.camera.getForwardRay().direction.scale(4));
-                
-                const flashMaterial = new BABYLON.StandardMaterial("flashMat", this.scene);
-                flashMaterial.emissiveColor = new BABYLON.Color3(1.5, 1.2, 0.5);
-                flash.material = flashMaterial;
-                
-                setTimeout(() => flash.dispose(), 100);
-            }
-            
             killZombie(zombie) {
-                console.log(`Killing zombie ${zombie.id}`);
-                
-                // Remove zombie
                 zombie.group.dispose();
                 this.zombies = this.zombies.filter(z => z.id !== zombie.id);
-                
                 this.kills++;
                 this.updateUI();
             }
@@ -487,42 +652,38 @@
                 this.zombies.forEach(zombieData => {
                     const zombie = zombieData.group;
                     
-                    // CRITICAL: Move zombie toward player but KEEP ON GROUND
                     const playerPos = this.camera.position.clone();
                     const zombiePos = zombie.position.clone();
                     
-                    // Calculate direction on ground plane only
                     playerPos.y = this.groundLevel;
                     zombiePos.y = this.groundLevel;
                     
                     const direction = playerPos.subtract(zombiePos).normalize();
-                    
-                    // Move zombie on ground ONLY
                     const movement = direction.scale(zombieData.speed);
-                    movement.y = 0; // NO vertical movement
+                    movement.y = 0;
                     zombie.position.addInPlace(movement);
                     
-                    // FORCE zombie to stay on ground
                     zombie.position.y = this.groundLevel;
-                    
-                    // Face player
                     zombie.lookAt(this.camera.position);
                     
-                    // Simple walking animation
-                    zombieData.animationTime += 0.1;
-                    const walkBob = Math.sin(zombieData.animationTime) * 0.05;
-                    zombie.position.y = this.groundLevel + Math.max(0, walkBob);
+                    // Animation
+                    zombieData.animationTime += 0.08;
+                    const shamble = Math.sin(zombieData.animationTime) * 0.1;
                     
-                    // Attack when close
+                    zombieData.parts.leftArm.rotation.x = 0.2 + shamble * 0.5;
+                    zombieData.parts.rightArm.rotation.x = 0.2 - shamble * 0.5;
+                    
+                    zombie.position.y = this.groundLevel + Math.abs(shamble) * 0.03;
+                    
                     const distance = BABYLON.Vector3.Distance(zombie.position, this.camera.position);
-                    if (distance < 8 && Date.now() - zombieData.lastAttack > 3000) {
-                        this.health -= 25;
+                    if (distance < 6 && Date.now() - zombieData.lastAttack > 2500) {
+                        this.health -= 15;
                         zombieData.lastAttack = Date.now();
                         this.updateUI();
                         
                         if (this.health <= 0) {
                             setTimeout(() => {
-                                alert(`💀 GAME OVER 💀\n\nKilled by walking zombies!\n\n🏆 Kills: ${this.kills}\n\nTry again?`);
+                                alert(`💀 GAME OVER! 💀\n\n🏆 Kills: ${this.kills}\n\nTap reload to try again!`);
                                 location.reload();
                             }, 500);
                         }
@@ -530,48 +691,21 @@
                 });
             }
             
-            handleMovement() {
-                if (!this.isPointerLocked) return;
+            updateMovement() {
+                if (!this.gameStarted) return;
                 
-                const speed = this.inputMap['Shift'] ? 0.8 : 0.5;
-                
-                // Calculate movement direction
-                let moveVector = new BABYLON.Vector3(0, 0, 0);
-                
-                if (this.inputMap['w']) {
+                // Apply movement from joystick
+                const speed = 0.5;
+                if (this.moveVector.x !== 0 || this.moveVector.z !== 0) {
                     const forward = this.camera.getForwardRay().direction.clone();
-                    forward.y = 0; // Remove vertical component - stay on ground
-                    moveVector.addInPlace(forward.normalize().scale(speed));
-                }
-                if (this.inputMap['s']) {
-                    const backward = this.camera.getForwardRay().direction.clone();
-                    backward.y = 0; // Remove vertical component
-                    moveVector.addInPlace(backward.normalize().scale(-speed));
-                }
-                if (this.inputMap['a']) {
-                    const left = BABYLON.Vector3.Cross(this.camera.getForwardRay().direction, BABYLON.Vector3.Up()).normalize();
-                    left.y = 0; // Remove vertical component
-                    moveVector.addInPlace(left.scale(-speed));
-                }
-                if (this.inputMap['d']) {
-                    const right = BABYLON.Vector3.Cross(this.camera.getForwardRay().direction, BABYLON.Vector3.Up()).normalize();
-                    right.y = 0; // Remove vertical component
-                    moveVector.addInPlace(right.scale(speed));
+                    forward.y = 0;
+                    const right = BABYLON.Vector3.Cross(forward, BABYLON.Vector3.Up()).normalize();
+                    
+                    const moveDirection = forward.scale(-this.moveVector.z).add(right.scale(this.moveVector.x));
+                    this.camera.position.addInPlace(moveDirection.scale(speed));
                 }
                 
-                // Apply movement but KEEP CAMERA AT GROUND + PLAYER HEIGHT
-                this.camera.position.addInPlace(moveVector);
-                this.camera.position.y = this.groundLevel + this.playerHeight; // FORCE camera to ground level
-                
-                if (this.inputMap['f']) {
-                    this.flashlight.intensity = this.flashlight.intensity > 0 ? 0 : 15;
-                    this.inputMap['f'] = false;
-                }
-                if (this.inputMap['Escape']) {
-                    if (this.isPointerLocked) {
-                        document.exitPointerLock();
-                    }
-                }
+                this.camera.position.y = this.groundLevel + this.playerHeight;
             }
             
             updateUI() {
@@ -579,33 +713,25 @@
                 document.getElementById('ammo').textContent = this.ammo;
                 document.getElementById('kills').textContent = this.kills;
                 document.getElementById('zombieCount').textContent = this.zombies.length;
-                
-                // Update flashlight
-                if (this.flashlight && this.camera) {
-                    this.flashlight.position = this.camera.position.clone();
-                    this.flashlight.direction = this.camera.getForwardRay().direction;
-                }
-            }
-            
-            startGame() {
-                this.updateUI();
-                console.log("Truly grounded zombie game loaded!");
             }
             
             gameLoop() {
                 this.engine.runRenderLoop(() => {
-                    this.handleMovement();
+                    this.updateMovement();
                     this.updateZombies();
-                    this.updateUI();
                     this.scene.render();
                 });
             }
         }
         
-        // Launch truly grounded game
-        window.addEventListener('load', () => {
-            new TrulyGroundedGame();
-        });
+        let game;
+        
+        function startMobileGame() {
+            document.getElementById('instructions').classList.add('hidden');
+            game = new MobileZombieGame();
+            game.gameStarted = true;
+            setTimeout(() => game.spawnMobileZombies(), 2000);
+        }
     </script>
 </body>
 </html>
