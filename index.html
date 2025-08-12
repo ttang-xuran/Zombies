@@ -174,34 +174,51 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 30px;
-            height: 30px;
+            width: 40px;
+            height: 40px;
             pointer-events: none;
             z-index: 1002;
-            opacity: 0.8;
+            opacity: 1;
+            border: 2px solid rgba(255, 255, 0, 0.8);
+            border-radius: 50%;
+            background: rgba(255, 255, 0, 0.1);
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
         }
         
         .crosshair::before, .crosshair::after {
             content: '';
             position: absolute;
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+            background: rgba(255, 255, 0, 0.9);
+            box-shadow: 0 0 5px rgba(255, 255, 0, 0.7);
         }
         
         .crosshair::before {
-            width: 16px;
-            height: 2px;
+            width: 20px;
+            height: 3px;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
         }
         
         .crosshair::after {
-            width: 2px;
-            height: 16px;
+            width: 3px;
+            height: 20px;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+        }
+        
+        .aim-indicator {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1003;
+            display: none;
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.6);
         }
         
         @media (max-width: 480px) {
@@ -251,11 +268,12 @@
     
     <div id="instructions">
         <div style="font-size: 24px; margin-bottom: 15px;"><strong>🧟 ZOMBIE SURVIVAL</strong></div>
-        <div>• <span class="warning">SIMPLE WORKING CONTROLS</span></div>
+        <div>• <span class="warning">ENHANCED SHOOTING SYSTEM</span></div>
         <div>• Left joystick: Move around</div>
-        <div>• Right side: Touch and drag to look</div>
-        <div>• Red button: Shoot zombies</div>
-        <div>• <span class="warning">Guaranteed to work!</span></div>
+        <div>• Right side: Touch and drag to aim</div>
+        <div>• <span class="warning">See yellow crosshair & red aim dot!</span></div>
+        <div>• Red FIRE button: Shoot visible bullets</div>
+        <div>• <span class="warning">Watch bullets fly to targets!</span></div>
         <button class="start-button" onclick="startMobileGame()">🎮 START GAME</button>
     </div>
     
@@ -269,6 +287,7 @@
     <div class="simple-look-area" id="lookArea"></div>
     
     <div class="crosshair"></div>
+    <div class="aim-indicator" id="aimIndicator"></div>
 
     <script>
         class SimpleZombieGame {
@@ -454,6 +473,7 @@
             
             setupSimpleLook() {
                 const lookArea = document.getElementById('lookArea');
+                const aimIndicator = document.getElementById('aimIndicator');
                 let lastTouch = null;
                 let isLooking = false;
                 
@@ -462,6 +482,12 @@
                     isLooking = true;
                     const touch = e.touches ? e.touches[0] : e;
                     lastTouch = { x: touch.clientX, y: touch.clientY };
+                    
+                    // Show aim indicator
+                    aimIndicator.style.display = 'block';
+                    aimIndicator.style.left = touch.clientX + 'px';
+                    aimIndicator.style.top = touch.clientY + 'px';
+                    
                     console.log('LOOK STARTED');
                 };
                 
@@ -473,9 +499,14 @@
                     const deltaX = touch.clientX - lastTouch.x;
                     const deltaY = touch.clientY - lastTouch.y;
                     
-                    this.camera.rotation.y += deltaX * 0.003;
-                    this.camera.rotation.x += deltaY * 0.003;
+                    // More responsive aiming
+                    this.camera.rotation.y += deltaX * 0.005;
+                    this.camera.rotation.x += deltaY * 0.005;
                     this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
+                    
+                    // Update aim indicator position
+                    aimIndicator.style.left = touch.clientX + 'px';
+                    aimIndicator.style.top = touch.clientY + 'px';
                     
                     lastTouch = { x: touch.clientX, y: touch.clientY };
                 };
@@ -484,6 +515,10 @@
                     e.preventDefault();
                     isLooking = false;
                     lastTouch = null;
+                    
+                    // Hide aim indicator
+                    aimIndicator.style.display = 'none';
+                    
                     console.log('LOOK ENDED');
                 };
                 
@@ -626,6 +661,9 @@
                 this.ammo--;
                 this.updateUI();
                 
+                // Create visible bullet
+                this.createBullet();
+                
                 const ray = new BABYLON.Ray(this.camera.position, this.camera.getForwardRay().direction);
                 const hit = this.scene.pickWithRay(ray, (mesh) => {
                     return this.zombies.some(zombie => 
@@ -644,6 +682,62 @@
                         this.killZombie(hitZombie);
                     }
                 }
+            }
+            
+            createBullet() {
+                // Create visible bullet projectile
+                const bullet = BABYLON.MeshBuilder.CreateSphere("bullet", {diameter: 0.1}, this.scene);
+                const bulletMaterial = new BABYLON.StandardMaterial("bulletMat", this.scene);
+                bulletMaterial.diffuseColor = new BABYLON.Color3(1, 1, 0); // Yellow bullet
+                bulletMaterial.emissiveColor = new BABYLON.Color3(0.8, 0.8, 0.2);
+                bullet.material = bulletMaterial;
+                
+                // Position bullet at camera
+                bullet.position = this.camera.position.clone();
+                
+                // Get shooting direction
+                const direction = this.camera.getForwardRay().direction.normalize();
+                
+                // Create bullet trail effect
+                const trail = BABYLON.MeshBuilder.CreateCylinder("trail", {
+                    height: 2, diameter: 0.05
+                }, this.scene);
+                const trailMaterial = new BABYLON.StandardMaterial("trailMat", this.scene);
+                trailMaterial.diffuseColor = new BABYLON.Color3(1, 0.8, 0);
+                trailMaterial.emissiveColor = new BABYLON.Color3(0.6, 0.4, 0);
+                trailMaterial.alpha = 0.7;
+                trail.material = trailMaterial;
+                trail.position = bullet.position.clone();
+                trail.lookAt(bullet.position.add(direction));
+                
+                // Animate bullet
+                const speed = 3;
+                const maxDistance = 200;
+                let traveled = 0;
+                
+                const animateBullet = () => {
+                    if (!bullet || !trail || traveled > maxDistance) {
+                        if (bullet) bullet.dispose();
+                        if (trail) trail.dispose();
+                        return;
+                    }
+                    
+                    const movement = direction.scale(speed);
+                    bullet.position.addInPlace(movement);
+                    trail.position = bullet.position.clone().add(direction.scale(-1));
+                    
+                    traveled += speed;
+                    
+                    requestAnimationFrame(animateBullet);
+                };
+                
+                animateBullet();
+                
+                // Clean up after 2 seconds
+                setTimeout(() => {
+                    if (bullet) bullet.dispose();
+                    if (trail) trail.dispose();
+                }, 2000);
             }
             
             killZombie(zombie) {
