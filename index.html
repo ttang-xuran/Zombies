@@ -1034,20 +1034,28 @@
                 
                 updateKeyboardMovement();
                 
-                // Mouse look for desktop
+                // Enhanced mouse look for desktop
                 document.addEventListener('mousemove', (e) => {
                     if (document.pointerLockElement === this.canvas) {
-                        const sensitivity = 0.002;
+                        const sensitivity = 0.003; // Increased sensitivity
                         this.camera.rotation.y += e.movementX * sensitivity;
-                        this.camera.rotation.x += e.movementY * sensitivity;
+                        this.camera.rotation.x -= e.movementY * sensitivity; // Fixed direction
                         this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
                     }
                 });
                 
-                // Click to enable pointer lock for mouse look
+                // Auto-enable pointer lock when clicking canvas
                 this.canvas.addEventListener('click', () => {
                     this.canvas.requestPointerLock();
                 });
+                
+                // Show instruction for mouse look
+                setTimeout(() => {
+                    if (!document.pointerLockElement) {
+                        console.log('DESKTOP: Click screen to enable mouse aiming');
+                        this.showInteractionPrompt('Click screen to enable mouse aiming');
+                    }
+                }, 2000);
                 
                 console.log('Desktop keyboard controls enabled');
             }
@@ -1179,22 +1187,47 @@
                 this.createBullet();
                 
                 const ray = new BABYLON.Ray(this.camera.position, this.camera.getForwardRay().direction);
+                console.log('RAY CAST - From:', this.camera.position, 'Direction:', this.camera.getForwardRay().direction);
+                
                 const hit = this.scene.pickWithRay(ray, (mesh) => {
-                    return this.zombies.some(zombie => 
-                        Object.values(zombie.parts).includes(mesh) || 
-                        zombie.mesh === mesh
-                    );
+                    // Check if mesh belongs to any zombie
+                    const isZombieMesh = this.zombies.some(zombie => {
+                        const belongsToZombie = Object.values(zombie.parts).includes(mesh) || 
+                                             zombie.mesh === mesh ||
+                                             mesh.parent === zombie.group;
+                        return belongsToZombie;
+                    });
+                    console.log('CHECKING MESH:', mesh.name, 'Is Zombie:', isZombieMesh);
+                    return isZombieMesh;
                 });
                 
-                if (hit.hit && hit.distance < 150) {
-                    const hitZombie = this.zombies.find(zombie => 
-                        Object.values(zombie.parts).includes(hit.pickedMesh) || 
-                        zombie.mesh === hit.pickedMesh
-                    );
+                console.log('RAY HIT:', hit.hit, 'Distance:', hit.distance, 'Mesh:', hit.pickedMesh?.name);
+                
+                if (hit.hit && hit.distance < 200) { // Increased range
+                    const hitZombie = this.zombies.find(zombie => {
+                        const isHitZombie = Object.values(zombie.parts).includes(hit.pickedMesh) || 
+                                          zombie.mesh === hit.pickedMesh ||
+                                          hit.pickedMesh?.parent === zombie.group;
+                        return isHitZombie;
+                    });
+                    
+                    console.log('HIT ZOMBIE:', hitZombie?.id);
                     
                     if (hitZombie) {
-                        this.killZombie(hitZombie);
+                        if (hitZombie.isGiant && hitZombie.health > 1) {
+                            hitZombie.health--;
+                            console.log('GIANT ZOMBIE HIT - Health remaining:', hitZombie.health);
+                            this.showInteractionPrompt(`Giant Zombie Health: ${hitZombie.health}`);
+                            
+                            if (hitZombie.health <= 0) {
+                                this.killZombie(hitZombie);
+                            }
+                        } else {
+                            this.killZombie(hitZombie);
+                        }
                     }
+                } else {
+                    console.log('NO HIT - Check zombie positions and ray direction');
                 }
             }
             
