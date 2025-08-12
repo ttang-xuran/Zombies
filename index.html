@@ -315,7 +315,7 @@
                 this.kills = 0;
                 this.gameStarted = false;
                 this.lastShot = 0;
-                this.shotCooldown = 200;
+                this.shotCooldown = 150;
                 
                 // SIMPLE MOBILE INPUT
                 this.moveVector = { x: 0, z: 0 };
@@ -738,6 +738,7 @@
                     aimIndicator.style.top = touch.clientY + 'px';
                     
                     // Immediate shooting - no delay
+                    console.log('FIRE BUTTON PRESSED - Starting shooting...');
                     this.shoot();
                     shootTimer = setInterval(() => this.shoot(), 200);
                     
@@ -860,11 +861,11 @@
                 const updateKeyboardMovement = () => {
                     let x = 0, z = 0;
                     
-                    // WASD movement
+                    // WASD movement - fix directions
                     if (keyState['KeyW'] || keyState['ArrowUp']) z = 1;
                     if (keyState['KeyS'] || keyState['ArrowDown']) z = -1;
-                    if (keyState['KeyA'] || keyState['ArrowLeft']) x = 1;
-                    if (keyState['KeyD'] || keyState['ArrowRight']) x = -1;
+                    if (keyState['KeyA'] || keyState['ArrowLeft']) x = -1;  // A = left
+                    if (keyState['KeyD'] || keyState['ArrowRight']) x = 1;   // D = right
                     
                     // Update move vector for keyboard
                     this.moveVector = { x: x, z: z };
@@ -1003,12 +1004,17 @@
             }
             
             shoot() {
-                if (this.ammo <= 0 || Date.now() - this.lastShot < this.shotCooldown) return;
+                console.log('SHOOT CALLED - Ammo:', this.ammo, 'Cooldown check:', Date.now() - this.lastShot);
+                if (this.ammo <= 0 || Date.now() - this.lastShot < this.shotCooldown) {
+                    console.log('SHOOT BLOCKED - Ammo:', this.ammo, 'Cooldown:', Date.now() - this.lastShot);
+                    return;
+                }
                 
                 this.lastShot = Date.now();
                 this.ammo--;
                 this.updateUI();
                 
+                console.log('SHOOTING! Creating bullet...');
                 // Create visible bullet
                 this.createBullet();
                 
