@@ -675,15 +675,15 @@
                     
                     if (distance <= maxDistance) {
                         handle.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
-                        this.moveVector.x = deltaX / maxDistance;
-                        this.moveVector.z = deltaY / maxDistance;
+                        this.moveVector.x = -deltaX / maxDistance;  // Reverse X
+                        this.moveVector.z = -deltaY / maxDistance;  // Reverse Y  
                     } else {
                         const angle = Math.atan2(deltaY, deltaX);
                         const limitedX = Math.cos(angle) * maxDistance;
                         const limitedY = Math.sin(angle) * maxDistance;
                         handle.style.transform = `translate(calc(-50% + ${limitedX}px), calc(-50% + ${limitedY}px))`;
-                        this.moveVector.x = limitedX / maxDistance;
-                        this.moveVector.z = limitedY / maxDistance;
+                        this.moveVector.x = -limitedX / maxDistance;  // Reverse X
+                        this.moveVector.z = -limitedY / maxDistance;  // Reverse Y
                     }
                     
                     console.log('MOVING:', this.moveVector.x.toFixed(2), this.moveVector.z.toFixed(2));
@@ -833,6 +833,13 @@
             }
             
             setupKeyboardControls() {
+                // Only enable keyboard controls on desktop/non-mobile devices
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                if (isMobile) {
+                    console.log('Mobile device detected - skipping keyboard controls');
+                    return;
+                }
+                
                 const keyState = {};
                 
                 document.addEventListener('keydown', (e) => {
@@ -881,6 +888,8 @@
                 this.canvas.addEventListener('click', () => {
                     this.canvas.requestPointerLock();
                 });
+                
+                console.log('Desktop keyboard controls enabled');
             }
             
             createMobileZombie() {
@@ -1154,8 +1163,8 @@
                     forward.y = 0;
                     const right = BABYLON.Vector3.Cross(forward, BABYLON.Vector3.Up()).normalize();
                     
-                    // Fix direction - reverse X axis to match joystick movement
-                    const moveDirection = forward.scale(this.moveVector.z).add(right.scale(-this.moveVector.x));
+                    // Movement direction fixed at joystick level
+                    const moveDirection = forward.scale(this.moveVector.z).add(right.scale(this.moveVector.x));
                     this.camera.position.addInPlace(moveDirection.scale(speed));
                 }
                 
@@ -1179,9 +1188,9 @@
                     if (Math.abs(this.carSpeed) < 0.01) this.carSpeed = 0;
                 }
                 
-                // Turn the car - fix direction
+                // Turn the car
                 if (this.moveVector.x !== 0 && Math.abs(this.carSpeed) > 0.1) {
-                    this.currentCar.group.rotation.y += -this.moveVector.x * 0.03 * (this.carSpeed / maxSpeed);
+                    this.currentCar.group.rotation.y += this.moveVector.x * 0.03 * (this.carSpeed / maxSpeed);
                 }
                 
                 // Move car forward/backward
