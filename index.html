@@ -280,14 +280,14 @@
     
     <div id="instructions">
         <div style="font-size: 24px; margin-bottom: 15px;"><strong>🧟 CITY SURVIVAL</strong></div>
-        <div>• <span class="warning">ULTRA-SMOOTH AIMING SYSTEM!</span></div>
-        <div>• Left joystick: Move around/Drive cars</div>
-        <div>• <span class="warning">DRAG on screen: Ultra-precise aiming with deadzone</span></div>
-        <div>• <span class="warning">TAP FIRE button: Shoot only (no aiming)</span></div>
-        <div>• <span class="warning">🏢 HOLD FIRE button near buildings to enter</span></div>
+        <div>• <span class="warning">CROSS-PLATFORM CONTROLS!</span></div>
+        <div>• <span class="warning">📱 MOBILE: Joystick + drag to aim + tap FIRE</span></div>
+        <div>• <span class="warning">🖥️ DESKTOP: WASD + mouse look + LEFT CLICK to shoot</span></div>
+        <div>• <span class="warning">Or SPACEBAR to shoot on desktop</span></div>
+        <div>• <span class="warning">🏢 Buildings: Walk close + HOLD FIRE/F key</span></div>
         <div>• <span class="warning">👹 FACE GIANT ZOMBIES inside buildings!</span></div>
-        <div>• <span class="warning">🚗 HOLD FIRE button near cars to drive</span></div>
-        <div>• <span class="warning">Perfect low-sensitivity professional controls!</span></div>
+        <div>• <span class="warning">🚗 Cars: Walk close + HOLD FIRE/F key</span></div>
+        <div>• <span class="warning">Perfect controls for mobile AND desktop!</span></div>
         <button class="start-button" onclick="startMobileGame()">🎮 START GAME</button>
     </div>
     
@@ -901,9 +901,27 @@
                 shootZone.addEventListener('touchend', endAiming, { passive: false });
                 
                 // Mouse events for desktop
-                shootZone.addEventListener('mousedown', startAiming);
+                shootZone.addEventListener('mousedown', (e) => {
+                    // Left click to shoot
+                    if (e.button === 0) { // Left mouse button
+                        e.preventDefault();
+                        console.log('MOUSE CLICK - Shooting!');
+                        this.shoot();
+                    }
+                    
+                    // Right click to aim
+                    if (e.button === 2) { // Right mouse button
+                        startAiming(e);
+                    }
+                });
+                
                 document.addEventListener('mousemove', moveAiming);
                 document.addEventListener('mouseup', endAiming);
+                
+                // Prevent right-click context menu
+                document.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                });
             }
             
             showAimLine(start, end) {
@@ -962,6 +980,35 @@
                     if (e.code === 'Space') {
                         e.preventDefault();
                         this.shoot();
+                    }
+                    
+                    // Interactions with F key
+                    if (e.code === 'KeyF') {
+                        e.preventDefault();
+                        
+                        // Exit building if inside
+                        if (this.insideBuilding) {
+                            this.exitBuilding();
+                            return;
+                        }
+                        
+                        // Enter building if near one
+                        if (this.nearBuilding) {
+                            this.enterBuilding(this.nearBuilding);
+                            return;
+                        }
+                        
+                        // Car interactions
+                        const nearCar = this.cars.find(car => car.nearPlayer && car.available);
+                        if (nearCar && !this.inCar) {
+                            this.enterCar(nearCar);
+                            return;
+                        }
+                        
+                        if (this.inCar) {
+                            this.exitCar();
+                            return;
+                        }
                     }
                 });
                 
