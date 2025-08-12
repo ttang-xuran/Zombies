@@ -98,16 +98,16 @@
         
         .simple-shoot-button {
             position: fixed;
-            width: 100px;
-            height: 100px;
-            bottom: 50px;
+            width: 120px;
+            height: 120px;
+            bottom: 40px;
             right: 30px;
             background: linear-gradient(135deg, #ff4444, #cc0000);
             border: 4px solid #ffffff;
             border-radius: 50%;
             color: white;
             font-family: 'Creepster', cursive;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -118,16 +118,20 @@
             box-shadow: 0 0 25px rgba(255, 68, 68, 0.7);
         }
         
-        .simple-look-area {
-            position: fixed;
-            top: 0;
+        .fire-crosshair {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            top: 50%;
             left: 50%;
-            width: 50%;
-            height: 60%;
-            z-index: 999;
-            pointer-events: all;
-            touch-action: none;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            transition: none;
         }
+        
         
         #instructions {
             position: fixed;
@@ -233,11 +237,11 @@
                 height: 50px;
             }
             .simple-shoot-button {
-                width: 80px;
-                height: 80px;
-                bottom: 40px;
+                width: 100px;
+                height: 100px;
+                bottom: 35px;
                 right: 25px;
-                font-size: 12px;
+                font-size: 10px;
             }
         }
     </style>
@@ -268,12 +272,12 @@
     
     <div id="instructions">
         <div style="font-size: 24px; margin-bottom: 15px;"><strong>🧟 ZOMBIE SURVIVAL</strong></div>
-        <div>• <span class="warning">ENHANCED SHOOTING SYSTEM</span></div>
+        <div>• <span class="warning">ALL-IN-ONE FIRE BUTTON</span></div>
         <div>• Left joystick: Move around</div>
-        <div>• Right side: Touch and drag to aim</div>
-        <div>• <span class="warning">See yellow crosshair & red aim dot!</span></div>
-        <div>• Red FIRE button: Shoot visible bullets</div>
-        <div>• <span class="warning">Watch bullets fly to targets!</span></div>
+        <div>• <span class="warning">Red FIRE button: Hold and drag to aim + shoot!</span></div>
+        <div>• <span class="warning">Crosshair moves inside fire button</span></div>
+        <div>• Auto-shoots while you hold and aim</div>
+        <div>• <span class="warning">One button controls everything!</span></div>
         <button class="start-button" onclick="startMobileGame()">🎮 START GAME</button>
     </div>
     
@@ -282,9 +286,11 @@
         <div class="simple-joystick-handle" id="moveHandle"></div>
     </div>
     
-    <div class="simple-shoot-button" id="shootButton">🔥<br>FIRE</div>
+    <div class="simple-shoot-button" id="shootButton">
+        🎯<br>AIM &<br>FIRE
+        <div class="fire-crosshair" id="fireCrosshair"></div>
+    </div>
     
-    <div class="simple-look-area" id="lookArea"></div>
     
     <div class="crosshair"></div>
     <div class="aim-indicator" id="aimIndicator"></div>
@@ -401,8 +407,6 @@
                 // SIMPLE JOYSTICK - GUARANTEED TO WORK
                 this.setupSimpleJoystick();
                 
-                // SIMPLE LOOK CONTROLS
-                this.setupSimpleLook();
                 
                 // SIMPLE SHOOT BUTTON
                 this.setupSimpleShoot();
@@ -471,16 +475,27 @@
                 document.addEventListener('mouseup', endJoystick);
             }
             
-            setupSimpleLook() {
-                const lookArea = document.getElementById('lookArea');
+            
+            setupSimpleShoot() {
+                const shootButton = document.getElementById('shootButton');
+                const fireCrosshair = document.getElementById('fireCrosshair');
                 const aimIndicator = document.getElementById('aimIndicator');
-                let lastTouch = null;
-                let isLooking = false;
                 
-                const startLook = (e) => {
+                let isAiming = false;
+                let aimCenter = { x: 0, y: 0 };
+                let lastTouch = null;
+                let shootTimer = null;
+                
+                const startAiming = (e) => {
                     e.preventDefault();
-                    isLooking = true;
+                    isAiming = true;
+                    
                     const touch = e.touches ? e.touches[0] : e;
+                    const rect = shootButton.getBoundingClientRect();
+                    aimCenter = {
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2
+                    };
                     lastTouch = { x: touch.clientX, y: touch.clientY };
                     
                     // Show aim indicator
@@ -488,60 +503,79 @@
                     aimIndicator.style.left = touch.clientX + 'px';
                     aimIndicator.style.top = touch.clientY + 'px';
                     
-                    console.log('LOOK STARTED');
+                    // Start continuous shooting after 300ms
+                    shootTimer = setTimeout(() => {
+                        this.shoot();
+                        shootTimer = setInterval(() => this.shoot(), 300);
+                    }, 300);
+                    
+                    console.log('AIM & SHOOT STARTED');
                 };
                 
-                const moveLook = (e) => {
-                    if (!lastTouch || !isLooking) return;
+                const moveAiming = (e) => {
+                    if (!isAiming || !lastTouch) return;
                     e.preventDefault();
                     
                     const touch = e.touches ? e.touches[0] : e;
-                    const deltaX = touch.clientX - lastTouch.x;
-                    const deltaY = touch.clientY - lastTouch.y;
+                    const deltaX = touch.clientX - aimCenter.x;
+                    const deltaY = touch.clientY - aimCenter.y;
+                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    const maxDistance = 50;
                     
-                    // More responsive aiming
-                    this.camera.rotation.y += deltaX * 0.005;
-                    this.camera.rotation.x += deltaY * 0.005;
+                    // Move fire crosshair within button
+                    if (distance <= maxDistance) {
+                        fireCrosshair.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+                    } else {
+                        const angle = Math.atan2(deltaY, deltaX);
+                        const limitedX = Math.cos(angle) * maxDistance;
+                        const limitedY = Math.sin(angle) * maxDistance;
+                        fireCrosshair.style.transform = `translate(calc(-50% + ${limitedX}px), calc(-50% + ${limitedY}px))`;
+                    }
+                    
+                    // Control camera aiming
+                    const aimDeltaX = touch.clientX - lastTouch.x;
+                    const aimDeltaY = touch.clientY - lastTouch.y;
+                    
+                    this.camera.rotation.y += aimDeltaX * 0.008;
+                    this.camera.rotation.x += aimDeltaY * 0.008;
                     this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
                     
-                    // Update aim indicator position
+                    // Update aim indicator
                     aimIndicator.style.left = touch.clientX + 'px';
                     aimIndicator.style.top = touch.clientY + 'px';
                     
                     lastTouch = { x: touch.clientX, y: touch.clientY };
                 };
                 
-                const endLook = (e) => {
+                const endAiming = (e) => {
                     e.preventDefault();
-                    isLooking = false;
+                    isAiming = false;
                     lastTouch = null;
+                    
+                    // Reset fire crosshair
+                    fireCrosshair.style.transform = 'translate(-50%, -50%)';
                     
                     // Hide aim indicator
                     aimIndicator.style.display = 'none';
                     
-                    console.log('LOOK ENDED');
+                    // Stop continuous shooting
+                    if (shootTimer) {
+                        clearTimeout(shootTimer);
+                        clearInterval(shootTimer);
+                        shootTimer = null;
+                    }
+                    
+                    console.log('AIM & SHOOT ENDED');
                 };
                 
-                lookArea.addEventListener('touchstart', startLook, { passive: false });
-                lookArea.addEventListener('touchmove', moveLook, { passive: false });
-                lookArea.addEventListener('touchend', endLook, { passive: false });
+                shootButton.addEventListener('touchstart', startAiming, { passive: false });
+                shootButton.addEventListener('touchmove', moveAiming, { passive: false });
+                shootButton.addEventListener('touchend', endAiming, { passive: false });
                 
-                lookArea.addEventListener('mousedown', startLook);
-                lookArea.addEventListener('mousemove', moveLook);
-                lookArea.addEventListener('mouseup', endLook);
-            }
-            
-            setupSimpleShoot() {
-                const shootButton = document.getElementById('shootButton');
-                
-                const shootNow = (e) => {
-                    e.preventDefault();
-                    this.shoot();
-                    console.log('SHOOTING!');
-                };
-                
-                shootButton.addEventListener('touchstart', shootNow, { passive: false });
-                shootButton.addEventListener('mousedown', shootNow);
+                // Mouse events for desktop
+                shootButton.addEventListener('mousedown', startAiming);
+                document.addEventListener('mousemove', moveAiming);
+                document.addEventListener('mouseup', endAiming);
             }
             
             createMobileZombie() {
