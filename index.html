@@ -687,15 +687,15 @@
                     
                     if (distance <= maxDistance) {
                         handle.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
-                        this.moveVector.x = -deltaX / maxDistance;  // Reverse X
-                        this.moveVector.z = -deltaY / maxDistance;  // Reverse Y  
+                        this.moveVector.x = deltaX / maxDistance;   // Fixed: Remove negative for correct left/right
+                        this.moveVector.z = -deltaY / maxDistance;  // Keep negative Y for forward/back  
                     } else {
                         const angle = Math.atan2(deltaY, deltaX);
                         const limitedX = Math.cos(angle) * maxDistance;
                         const limitedY = Math.sin(angle) * maxDistance;
                         handle.style.transform = `translate(calc(-50% + ${limitedX}px), calc(-50% + ${limitedY}px))`;
-                        this.moveVector.x = -limitedX / maxDistance;  // Reverse X
-                        this.moveVector.z = -limitedY / maxDistance;  // Reverse Y
+                        this.moveVector.x = limitedX / maxDistance;  // Fixed: Remove negative for correct left/right
+                        this.moveVector.z = -limitedY / maxDistance; // Keep negative Y for forward/back
                     }
                     
                     console.log('MOVING:', this.moveVector.x.toFixed(2), this.moveVector.z.toFixed(2));
