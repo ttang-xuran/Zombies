@@ -405,14 +405,12 @@
                 // Initialize buildings array first
                 this.buildings = [];
                 
-                // School Building
+                // Create 5 different building types
                 this.createSchool();
-                
-                // Police Station
-                this.createPoliceStation();
-                
-                // Bus Station
-                this.createBusStation();
+                this.createPoliceStation(); 
+                this.createGasStation();
+                this.createShoppingMall();
+                this.createHospital();
                 
                 // Create streets and cars
                 this.createStreets();
@@ -531,6 +529,137 @@
                     entrance: busEntrance,
                     position: busStation.position.clone(),
                     type: "bus"
+                });
+            }
+            
+            createGasStation() {
+                // Gas station building
+                const gasStation = BABYLON.MeshBuilder.CreateBox("gasStation", {
+                    width: 40, height: 18, depth: 30
+                }, this.scene);
+                gasStation.position.set(90, this.groundLevel + 9, 70);
+                
+                const gasMaterial = new BABYLON.StandardMaterial("gasMat", this.scene);
+                gasMaterial.diffuseColor = new BABYLON.Color3(0.8, 0.8, 0.6); // Light yellow
+                gasStation.material = gasMaterial;
+                
+                // Gas station canopy
+                const canopy = BABYLON.MeshBuilder.CreateBox("gasCanopy", {
+                    width: 50, height: 3, depth: 35
+                }, this.scene);
+                canopy.position.set(90, this.groundLevel + 20, 70);
+                const canopyMaterial = new BABYLON.StandardMaterial("canopyMat", this.scene);
+                canopyMaterial.diffuseColor = new BABYLON.Color3(0.9, 0.9, 0.9); // White
+                canopy.material = canopyMaterial;
+                
+                // Gas pumps
+                for (let i = 0; i < 4; i++) {
+                    const pump = BABYLON.MeshBuilder.CreateBox("gasPump", {
+                        width: 2, height: 4, depth: 1.5
+                    }, this.scene);
+                    pump.position.set(90 + (i - 1.5) * 8, this.groundLevel + 2, 85);
+                    const pumpMaterial = new BABYLON.StandardMaterial("pumpMat", this.scene);
+                    pumpMaterial.diffuseColor = new BABYLON.Color3(1, 0.3, 0.3); // Red
+                    pump.material = pumpMaterial;
+                }
+                
+                // Gas station entrance
+                const gasEntrance = BABYLON.MeshBuilder.CreateBox("gasEntrance", {
+                    width: 6, height: 10, depth: 2
+                }, this.scene);
+                gasEntrance.position.set(90, this.groundLevel + 5, 55.5);
+                const gasEntranceMaterial = new BABYLON.StandardMaterial("gasEntranceMat", this.scene);
+                gasEntranceMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2); // Dark
+                gasEntrance.material = gasEntranceMaterial;
+                
+                this.buildings.push({
+                    name: "Gas Station",
+                    mesh: gasStation,
+                    entrance: gasEntrance,
+                    position: gasStation.position.clone(),
+                    type: "gas"
+                });
+            }
+            
+            createShoppingMall() {
+                // Large shopping mall
+                const mall = BABYLON.MeshBuilder.CreateBox("shoppingMall", {
+                    width: 70, height: 22, depth: 50
+                }, this.scene);
+                mall.position.set(-90, this.groundLevel + 11, 80);
+                
+                const mallMaterial = new BABYLON.StandardMaterial("mallMat", this.scene);
+                mallMaterial.diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.8); // Light blue-gray
+                mall.material = mallMaterial;
+                
+                // Mall sign
+                const mallSign = BABYLON.MeshBuilder.CreateBox("mallSign", {
+                    width: 25, height: 4, depth: 1
+                }, this.scene);
+                mallSign.position.set(-90, this.groundLevel + 25, 54);
+                const mallSignMaterial = new BABYLON.StandardMaterial("mallSignMat", this.scene);
+                mallSignMaterial.diffuseColor = new BABYLON.Color3(1, 0.8, 0); // Golden
+                mallSign.material = mallSignMaterial;
+                
+                // Mall entrance (large glass doors)
+                const mallEntrance = BABYLON.MeshBuilder.CreateBox("mallEntrance", {
+                    width: 12, height: 12, depth: 2
+                }, this.scene);
+                mallEntrance.position.set(-90, this.groundLevel + 6, 54.5);
+                const mallEntranceMaterial = new BABYLON.StandardMaterial("mallEntranceMat", this.scene);
+                mallEntranceMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.5, 0.8); // Glass blue
+                mallEntranceMaterial.alpha = 0.7; // Semi-transparent
+                mallEntrance.material = mallEntranceMaterial;
+                
+                this.buildings.push({
+                    name: "Shopping Mall",
+                    mesh: mall,
+                    entrance: mallEntrance,
+                    position: mall.position.clone(),
+                    type: "mall"
+                });
+            }
+            
+            createHospital() {
+                // Hospital building
+                const hospital = BABYLON.MeshBuilder.CreateBox("hospital", {
+                    width: 55, height: 30, depth: 45
+                }, this.scene);
+                hospital.position.set(80, this.groundLevel + 15, -80);
+                
+                const hospitalMaterial = new BABYLON.StandardMaterial("hospitalMat", this.scene);
+                hospitalMaterial.diffuseColor = new BABYLON.Color3(0.9, 0.9, 0.9); // White
+                hospital.material = hospitalMaterial;
+                
+                // Red cross symbol
+                const crossV = BABYLON.MeshBuilder.CreateBox("crossVertical", {
+                    width: 3, height: 15, depth: 1
+                }, this.scene);
+                crossV.position.set(80, this.groundLevel + 22, -57);
+                const crossH = BABYLON.MeshBuilder.CreateBox("crossHorizontal", {
+                    width: 10, height: 3, depth: 1
+                }, this.scene);
+                crossH.position.set(80, this.groundLevel + 22, -57);
+                const crossMaterial = new BABYLON.StandardMaterial("crossMat", this.scene);
+                crossMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0); // Red
+                crossV.material = crossMaterial;
+                crossH.material = crossMaterial;
+                
+                // Hospital entrance
+                const hospitalEntrance = BABYLON.MeshBuilder.CreateBox("hospitalEntrance", {
+                    width: 8, height: 12, depth: 2
+                }, this.scene);
+                hospitalEntrance.position.set(80, this.groundLevel + 6, -57.5);
+                const hospitalEntranceMaterial = new BABYLON.StandardMaterial("hospitalEntranceMat", this.scene);
+                hospitalEntranceMaterial.diffuseColor = new BABYLON.Color3(0.8, 0.8, 0.8); // Light gray
+                hospitalEntrance.material = hospitalEntranceMaterial;
+                
+                this.buildings.push({
+                    name: "Hospital",
+                    mesh: hospital,
+                    entrance: hospitalEntrance,
+                    position: hospital.position.clone(),
+                    type: "hospital"
                 });
             }
             
@@ -1018,8 +1147,8 @@
                     if (e.code === 'KeyG') {
                         e.preventDefault();
                         
-                        // Exit building if inside
-                        if (this.insideBuilding) {
+                        // Exit building ONLY if inside AND near door
+                        if (this.insideBuilding && this.nearDoor) {
                             this.exitBuilding();
                             return;
                         }
@@ -1028,6 +1157,11 @@
                         if (this.inCar) {
                             this.exitCar();
                             return;
+                        }
+                        
+                        // Show message if in building but not near door
+                        if (this.insideBuilding && !this.nearDoor) {
+                            this.showInteractionPrompt('🚪 Find the exit door to leave the building!');
                         }
                     }
                 });
@@ -1576,11 +1710,19 @@
             
             checkBuildingInteraction() {
                 this.nearBuilding = null;
+                this.nearDoor = false;
                 
                 if (this.insideBuilding) {
-                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                    const exitText = isMobile ? "Hold FIRE button to exit building" : "Press G key to exit building";
-                    this.showInteractionPrompt(exitText);
+                    // Check if near exit door
+                    if (this.currentDoor) {
+                        const doorDistance = BABYLON.Vector3.Distance(this.camera.position, this.currentDoor.position);
+                        if (doorDistance < 12) {
+                            this.nearDoor = true;
+                            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                            const exitText = isMobile ? "🚪 Hold FIRE button to exit building" : "🚪 Press G key to exit building";
+                            this.showInteractionPrompt(exitText);
+                        }
+                    }
                     return;
                 }
                 
@@ -1688,8 +1830,8 @@
                 const interiorGroup = new BABYLON.TransformNode(`${building.type}Interior`, this.scene);
                 this.buildingInterior = interiorGroup;
                 
-                // Create room walls
-                const roomSize = { width: 30, height: 15, depth: 25 };
+                // Create MUCH LARGER room walls for running around
+                const roomSize = { width: 80, height: 20, depth: 60 };
                 
                 // Floor
                 const floor = BABYLON.MeshBuilder.CreateGround("interiorFloor", {
@@ -1725,6 +1867,9 @@
                     wallMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.4, 0.3); // Brown walls
                     wall.material = wallMaterial;
                 });
+                
+                // Add interior door for exit
+                this.createInteriorDoor(building, interiorGroup, roomSize);
                 
                 // Add some interior furniture based on building type
                 this.addInteriorFurniture(building, interiorGroup, roomSize);
@@ -1764,22 +1909,56 @@
                     const counterMaterial = new BABYLON.StandardMaterial("counterMat", this.scene);
                     counterMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.4); // Police blue
                     counter.material = counterMaterial;
-                } else if (building.type === 'bus') {
-                    // Add benches
-                    for (let i = 0; i < 4; i++) {
-                        const bench = BABYLON.MeshBuilder.CreateBox("bench", {
-                            width: 8, height: 1, depth: 1.5
+                } else if (building.type === 'gas') {
+                    // Gas station interior - convenience store
+                    for (let i = 0; i < 6; i++) {
+                        const shelf = BABYLON.MeshBuilder.CreateBox("shelf", {
+                            width: 8, height: 3, depth: 1.5
                         }, this.scene);
-                        bench.position.set(
-                            building.position.x,
-                            this.groundLevel + 0.5,
-                            building.position.z + (i - 2) * 4
+                        shelf.position.set(
+                            building.position.x + (i % 3 - 1) * 12,
+                            this.groundLevel + 1.5,
+                            building.position.z + Math.floor(i / 3) * 10 - 5
                         );
-                        bench.parent = parent;
+                        shelf.parent = parent;
                         
-                        const benchMaterial = new BABYLON.StandardMaterial("benchMat", this.scene);
-                        benchMaterial.diffuseColor = furnitureColor;
-                        bench.material = benchMaterial;
+                        const shelfMaterial = new BABYLON.StandardMaterial("shelfMat", this.scene);
+                        shelfMaterial.diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.6); // Gray
+                        shelf.material = shelfMaterial;
+                    }
+                } else if (building.type === 'mall') {
+                    // Shopping mall - multiple stores
+                    for (let i = 0; i < 12; i++) {
+                        const store = BABYLON.MeshBuilder.CreateBox("store", {
+                            width: 10, height: 4, depth: 8
+                        }, this.scene);
+                        store.position.set(
+                            building.position.x + (i % 4 - 1.5) * 15,
+                            this.groundLevel + 2,
+                            building.position.z + Math.floor(i / 4) * 15 - 10
+                        );
+                        store.parent = parent;
+                        
+                        const storeMaterial = new BABYLON.StandardMaterial("storeMat", this.scene);
+                        storeMaterial.diffuseColor = new BABYLON.Color3(0.7, 0.5, 0.3); // Store color
+                        store.material = storeMaterial;
+                    }
+                } else if (building.type === 'hospital') {
+                    // Hospital equipment - beds and medical devices
+                    for (let i = 0; i < 8; i++) {
+                        const bed = BABYLON.MeshBuilder.CreateBox("bed", {
+                            width: 2, height: 1, depth: 6
+                        }, this.scene);
+                        bed.position.set(
+                            building.position.x + (i % 4 - 1.5) * 12,
+                            this.groundLevel + 0.5,
+                            building.position.z + Math.floor(i / 4) * 15 - 5
+                        );
+                        bed.parent = parent;
+                        
+                        const bedMaterial = new BABYLON.StandardMaterial("bedMat", this.scene);
+                        bedMaterial.diffuseColor = new BABYLON.Color3(0.9, 0.9, 0.9); // White
+                        bed.material = bedMaterial;
                     }
                 }
             }
@@ -1829,6 +2008,28 @@
                 }, 2000);
                 
                 console.log('🧟‍♂️ TERRIFYING Giant zombie spawned with 25 health!');
+            }
+            
+            createInteriorDoor(building, parent, roomSize) {
+                // Create exit door at the front of the room
+                const door = BABYLON.MeshBuilder.CreateBox("exitDoor", {
+                    width: 8, height: 12, depth: 2
+                }, this.scene);
+                door.position.set(
+                    building.position.x,
+                    this.groundLevel + 6,
+                    building.position.z + roomSize.depth/2 - 1 // At front wall
+                );
+                door.parent = parent;
+                
+                const doorMaterial = new BABYLON.StandardMaterial("doorMat", this.scene);
+                doorMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.2, 0.1); // Brown door
+                door.material = doorMaterial;
+                
+                // Store door reference for exit detection
+                this.currentDoor = door;
+                
+                console.log('Interior door created at position:', door.position);
             }
             
             createGiantZombie() {
