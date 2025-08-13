@@ -283,7 +283,7 @@
         <div>• <span class="warning">OPTIMIZED FOR YOUR DEVICE!</span></div>
         <div>• <span class="warning">📱 MOBILE: Joystick + DRAG ANYWHERE to aim</span></div>
         <div>• <span class="warning">📱 TAP FIRE button to shoot (iPhone optimized!)</span></div>
-        <div>• <span class="warning">🖥️ DESKTOP: WASD + mouse look + LEFT CLICK</span></div>
+        <div>• <span class="warning">🖥️ DESKTOP: WASD移动 + 🎯鼠标位置=瞄准镜位置 + 左键射击</span></div>
         <div>• <span class="warning">🏢 Buildings: Walk close + HOLD FIRE/F key</span></div>
         <div>• <span class="warning">👹 FACE GIANT ZOMBIES inside buildings!</span></div>
         <div>• <span class="warning">🚗 Cars: Walk close + HOLD FIRE/F key</span></div>
@@ -1045,28 +1045,35 @@
                 
                 updateKeyboardMovement();
                 
-                // Enhanced mouse look for desktop
-                document.addEventListener('mousemove', (e) => {
-                    if (document.pointerLockElement === this.canvas) {
-                        const sensitivity = 0.003; // Increased sensitivity
-                        this.camera.rotation.y += e.movementX * sensitivity;
-                        this.camera.rotation.x -= e.movementY * sensitivity; // Fixed direction
-                        this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
-                    }
-                });
+                // DIRECT MOUSE CROSSHAIR CONTROL - Mouse position = Crosshair position
+                const mouseCrosshairHandler = (e) => {
+                    // Convert mouse position to camera rotation directly
+                    const centerX = window.innerWidth / 2;
+                    const centerY = window.innerHeight / 2;
+                    
+                    // Calculate offset from screen center
+                    const offsetX = e.clientX - centerX;
+                    const offsetY = e.clientY - centerY;
+                    
+                    // Convert screen coordinates to camera angles
+                    // Horizontal rotation (Y axis) - left/right
+                    const maxHorizontalAngle = Math.PI / 3; // 60 degrees each side
+                    const horizontalRange = window.innerWidth / 2;
+                    this.camera.rotation.y = (offsetX / horizontalRange) * maxHorizontalAngle;
+                    
+                    // Vertical rotation (X axis) - up/down  
+                    const maxVerticalAngle = Math.PI / 4; // 45 degrees up/down
+                    const verticalRange = window.innerHeight / 2;
+                    this.camera.rotation.x = -(offsetY / verticalRange) * maxVerticalAngle;
+                    
+                    // Clamp to reasonable limits
+                    this.camera.rotation.y = Math.max(-maxHorizontalAngle, Math.min(maxHorizontalAngle, this.camera.rotation.y));
+                    this.camera.rotation.x = Math.max(-maxVerticalAngle, Math.min(maxVerticalAngle, this.camera.rotation.x));
+                    
+                    console.log('🎯 直接瞄准 - 鼠标位置:', e.clientX, e.clientY, '瞄准角度:', this.camera.rotation.x.toFixed(3), this.camera.rotation.y.toFixed(3));
+                };
                 
-                // Auto-enable pointer lock when clicking canvas
-                this.canvas.addEventListener('click', () => {
-                    this.canvas.requestPointerLock();
-                });
-                
-                // Show instruction for mouse look
-                setTimeout(() => {
-                    if (!document.pointerLockElement) {
-                        console.log('DESKTOP: Click screen to enable mouse aiming');
-                        this.showInteractionPrompt('Click screen to enable mouse aiming');
-                    }
-                }, 2000);
+                document.addEventListener('mousemove', mouseCrosshairHandler);
                 
                 console.log('Desktop keyboard controls enabled');
             }
