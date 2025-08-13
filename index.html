@@ -1064,7 +1064,7 @@
                     // Vertical rotation (X axis) - up/down  
                     const maxVerticalAngle = Math.PI / 4; // 45 degrees up/down
                     const verticalRange = window.innerHeight / 2;
-                    this.camera.rotation.x = -(offsetY / verticalRange) * maxVerticalAngle;
+                    this.camera.rotation.x = (offsetY / verticalRange) * maxVerticalAngle;
                     
                     // Clamp to reasonable limits
                     this.camera.rotation.y = Math.max(-maxHorizontalAngle, Math.min(maxHorizontalAngle, this.camera.rotation.y));
