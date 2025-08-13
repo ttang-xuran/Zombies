@@ -1321,12 +1321,49 @@
             updateZombies() {
                 if (!this.gameStarted) return;
                 
-                this.zombies.forEach(zombieData => {
+                this.zombies.forEach((zombieData, index) => {
                     const zombie = zombieData.group;
                     
                     const playerPos = this.camera.position.clone();
                     const zombiePos = zombie.position.clone();
                     
+                    // Check for car collision if player is driving
+                    if (this.inCar && this.currentCar) {
+                        const carDistance = BABYLON.Vector3.Distance(zombie.position, this.currentCar.group.position);
+                        if (carDistance < 4 && Math.abs(this.carSpeed) > 1) {
+                            // Kill zombie by car impact
+                            this.showInteractionPrompt(`🚗💥 Hit zombie with car! +1 Kill`);
+                            this.killZombie(zombieData);
+                            return;
+                        }
+                        
+                        // If close to car but not hit, climb onto car
+                        if (carDistance < 6) {
+                            // Zombie climbs onto car
+                            const carPos = this.currentCar.group.position.clone();
+                            carPos.y += 2; // Climb on top of car
+                            zombie.position = BABYLON.Vector3.Lerp(zombie.position, carPos, 0.02);
+                            zombie.lookAt(this.camera.position);
+                            
+                            // Attack if on car
+                            if (carDistance < 4 && Date.now() - zombieData.lastAttack > 2500) {
+                                this.health -= 20; // More damage when on car
+                                zombieData.lastAttack = Date.now();
+                                this.updateUI();
+                                this.showInteractionPrompt("🧟 Zombie on car! Drive fast to shake it off!");
+                                
+                                if (this.health <= 0) {
+                                    setTimeout(() => {
+                                        alert(`💀 GAME OVER! 💀\n\n🏆 Kills: ${this.kills}\n\nTap reload to try again!`);
+                                        location.reload();
+                                    }, 500);
+                                }
+                            }
+                            return;
+                        }
+                    }
+                    
+                    // Normal zombie movement toward player
                     playerPos.y = this.groundLevel;
                     zombiePos.y = this.groundLevel;
                     
@@ -1347,17 +1384,20 @@
                     
                     zombie.position.y = this.groundLevel + Math.abs(shamble) * 0.03;
                     
-                    const distance = BABYLON.Vector3.Distance(zombie.position, this.camera.position);
-                    if (distance < 6 && Date.now() - zombieData.lastAttack > 2500) {
-                        this.health -= 15;
-                        zombieData.lastAttack = Date.now();
-                        this.updateUI();
-                        
-                        if (this.health <= 0) {
-                            setTimeout(() => {
-                                alert(`💀 GAME OVER! 💀\n\n🏆 Kills: ${this.kills}\n\nTap reload to try again!`);
-                                location.reload();
-                            }, 500);
+                    // Normal attack when not in car
+                    if (!this.inCar) {
+                        const distance = BABYLON.Vector3.Distance(zombie.position, this.camera.position);
+                        if (distance < 6 && Date.now() - zombieData.lastAttack > 2500) {
+                            this.health -= 15;
+                            zombieData.lastAttack = Date.now();
+                            this.updateUI();
+                            
+                            if (this.health <= 0) {
+                                setTimeout(() => {
+                                    alert(`💀 GAME OVER! 💀\n\n🏆 Kills: ${this.kills}\n\nTap reload to try again!`);
+                                    location.reload();
+                                }, 500);
+                            }
                         }
                     }
                 });
@@ -1433,8 +1473,7 @@
                 carPos.y += 3; // Camera height inside car
                 this.camera.position = carPos;
                 
-                // Camera follows car rotation
-                this.camera.rotation.y = this.currentCar.group.rotation.y;
+                // Keep mouse aiming control - DON'T force camera rotation to follow car
             }
             
             checkCarInteraction() {
