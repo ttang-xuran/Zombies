@@ -640,7 +640,10 @@
                     id: id,
                     available: true,
                     speed: 0,
-                    maxSpeed: 2
+                    maxSpeed: 2,
+                    health: 100, // Car health
+                    maxHealth: 100,
+                    lastDamage: 0
                 };
             }
             
@@ -1051,7 +1054,7 @@
                 
                 updateKeyboardMovement();
                 
-                // DIRECT MOUSE CROSSHAIR CONTROL - Mouse position = Crosshair position
+                // DIRECT MOUSE CROSSHAIR CONTROL - Mouse position = Crosshair position  
                 const mouseCrosshairHandler = (e) => {
                     // Convert mouse position to camera rotation directly
                     const centerX = window.innerWidth / 2;
@@ -1076,7 +1079,9 @@
                     this.camera.rotation.y = Math.max(-maxHorizontalAngle, Math.min(maxHorizontalAngle, this.camera.rotation.y));
                     this.camera.rotation.x = Math.max(-maxVerticalAngle, Math.min(maxVerticalAngle, this.camera.rotation.x));
                     
-                    console.log('🎯 直接瞄准 - 鼠标位置:', e.clientX, e.clientY, '瞄准角度:', this.camera.rotation.x.toFixed(3), this.camera.rotation.y.toFixed(3));
+                    // DEBUG: Show if in car
+                    const carStatus = this.inCar ? ' [IN CAR]' : ' [ON FOOT]';
+                    console.log('🎯 鼠标瞄准' + carStatus + ' - 位置:', e.clientX, e.clientY, '角度:', this.camera.rotation.x.toFixed(3), this.camera.rotation.y.toFixed(3));
                 };
                 
                 document.addEventListener('mousemove', mouseCrosshairHandler);
@@ -1339,10 +1344,32 @@
                     // Check for car collision if player is driving
                     if (this.inCar && this.currentCar) {
                         const carDistance = BABYLON.Vector3.Distance(zombie.position, this.currentCar.group.position);
-                        if (carDistance < 4 && Math.abs(this.carSpeed) > 1) {
+                        if (carDistance < 4 && Math.abs(this.carSpeed) > 0.5) {
+                            // CAR DAMAGE SYSTEM - Car takes damage when hitting zombies
+                            const impactDamage = zombieData.isGiant ? 30 : 15; // Giant zombies damage car more
+                            this.currentCar.health -= impactDamage;
+                            this.currentCar.lastDamage = Date.now();
+                            
                             // Kill zombie by car impact
-                            this.showInteractionPrompt(`🚗💥 Hit zombie with car! +1 Kill`);
+                            const bonusKills = zombieData.isGiant ? 5 : 1;
+                            this.kills += bonusKills - 1; // Subtract 1 because killZombie adds 1
+                            this.showInteractionPrompt(`🚗💥 Hit ${zombieData.isGiant ? 'GIANT ' : ''}zombie! +${bonusKills} Kill(s) | Car HP: ${this.currentCar.health}`);
                             this.killZombie(zombieData);
+                            
+                            // Check if car is destroyed
+                            if (this.currentCar.health <= 0) {
+                                this.showInteractionPrompt('🔥 CAR DESTROYED! EXIT IMMEDIATELY! 🔥');
+                                setTimeout(() => {
+                                    this.destroyCar();
+                                }, 2000);
+                            } else if (this.currentCar.health <= 30) {
+                                this.showInteractionPrompt('⚠️ CAR BADLY DAMAGED! SMOKE! ⚠️');
+                            } else if (this.currentCar.health <= 60) {
+                                this.showInteractionPrompt('🔧 Car damaged! Handle with care!');
+                            }
+                            
+                            // Add visual car damage effects
+                            this.updateCarVisualDamage();
                             return;
                         }
                         
@@ -1953,6 +1980,45 @@
                 document.getElementById('ammo').textContent = this.ammo;
                 document.getElementById('kills').textContent = this.kills;
                 document.getElementById('zombieCount').textContent = this.zombies.length;
+            }
+            
+            updateCarVisualDamage() {
+                if (!this.currentCar) return;
+                
+                const healthPercent = this.currentCar.health / this.currentCar.maxHealth;
+                const carBody = this.currentCar.body;
+                
+                // Change car color based on damage
+                if (healthPercent <= 0.3) {
+                    // Badly damaged - dark red/black with smoke effect
+                    carBody.material.diffuseColor = new BABYLON.Color3(0.3, 0.1, 0.1);
+                    carBody.material.emissiveColor = new BABYLON.Color3(0.2, 0.05, 0.05);
+                } else if (healthPercent <= 0.6) {
+                    // Moderately damaged - darker color
+                    const originalColor = carBody.material.diffuseColor;
+                    carBody.material.diffuseColor = originalColor.scale(0.7);
+                }
+                
+                console.log(`🚗 Car visual damage updated: ${this.currentCar.health}/${this.currentCar.maxHealth} HP`);
+            }
+            
+            destroyCar() {
+                if (!this.currentCar) return;
+                
+                // Force player out of destroyed car
+                this.exitCar();
+                
+                // Mark car as destroyed
+                this.currentCar.available = false;
+                this.currentCar.health = 0;
+                
+                // Visual destruction effect
+                const carBody = this.currentCar.body;
+                carBody.material.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1); // Black/burnt
+                carBody.material.emissiveColor = new BABYLON.Color3(0.3, 0.1, 0.05); // Glowing embers
+                
+                this.showInteractionPrompt('💥 CAR EXPLODED! Find another vehicle! 💥');
+                console.log('🔥 Car destroyed and player ejected!');
             }
             
             gameLoop() {
