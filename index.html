@@ -1238,13 +1238,22 @@
                     console.log('HIT ZOMBIE:', hitZombie?.id);
                     
                     if (hitZombie) {
-                        if (hitZombie.isGiant && hitZombie.health > 1) {
+                        if (hitZombie.isGiant) {
                             hitZombie.health--;
-                            console.log('GIANT ZOMBIE HIT - Health remaining:', hitZombie.health);
-                            this.showInteractionPrompt(`Giant Zombie Health: ${hitZombie.health}`);
+                            console.log('🎯 GIANT ZOMBIE HIT - Health remaining:', hitZombie.health);
+                            
+                            // Show dramatic health feedback
+                            const healthPercent = Math.round((hitZombie.health / hitZombie.maxHealth) * 100);
+                            this.showInteractionPrompt(`💀 GIANT ZOMBIE: ${hitZombie.health}/${hitZombie.maxHealth} HP (${healthPercent}%)`);
                             
                             if (hitZombie.health <= 0) {
+                                this.showInteractionPrompt('🎉 GIANT ZOMBIE DEFEATED! +5 KILLS! 🎉');
+                                this.kills += 4; // Bonus kills for giant zombie
                                 this.killZombie(hitZombie);
+                            } else if (hitZombie.health <= 5) {
+                                this.showInteractionPrompt('🚨 GIANT ZOMBIE ENRAGED! ALMOST DEAD! 🚨');
+                            } else if (hitZombie.health <= 12) {
+                                this.showInteractionPrompt('💥 GIANT ZOMBIE WEAKENING! KEEP SHOOTING! 💥');
                             }
                         } else {
                             this.killZombie(hitZombie);
@@ -1363,38 +1372,78 @@
                         }
                     }
                     
-                    // Normal zombie movement toward player
+                    // Zombie movement toward player
                     playerPos.y = this.groundLevel;
                     zombiePos.y = this.groundLevel;
                     
                     const direction = playerPos.subtract(zombiePos).normalize();
-                    const movement = direction.scale(zombieData.speed);
+                    let moveSpeed = zombieData.speed;
+                    
+                    // GIANT ZOMBIE SPECIAL BEHAVIOR
+                    if (zombieData.isGiant) {
+                        const distance = BABYLON.Vector3.Distance(zombie.position, this.camera.position);
+                        
+                        // Giant zombie gets faster when damaged
+                        if (zombieData.health < zombieData.maxHealth * 0.5) {
+                            moveSpeed *= 1.5; // 50% faster when below half health
+                        }
+                        if (zombieData.health < zombieData.maxHealth * 0.2) {
+                            moveSpeed *= 2; // Even faster when almost dead
+                        }
+                        
+                        // Giant zombie roars occasionally
+                        if (Date.now() - zombieData.lastRoar > 5000) {
+                            zombieData.lastRoar = Date.now();
+                            this.showInteractionPrompt('🧟‍♂️ *TERRIFYING ROAR* 🧟‍♂️');
+                        }
+                        
+                        // Make giant zombie's eyes glow brighter when close
+                        if (distance < 15) {
+                            // Eyes should glow more intensely (this would require accessing the eye materials)
+                            console.log('👁️ Giant zombie eyes glowing intensely!');
+                        }
+                    }
+                    
+                    const movement = direction.scale(moveSpeed);
                     movement.y = 0;
                     zombie.position.addInPlace(movement);
                     
                     zombie.position.y = this.groundLevel;
                     zombie.lookAt(this.camera.position);
                     
-                    // Animation
-                    zombieData.animationTime += 0.08;
-                    const shamble = Math.sin(zombieData.animationTime) * 0.1;
+                    // Enhanced animation for giant zombies
+                    zombieData.animationTime += zombieData.isGiant ? 0.06 : 0.08;
+                    const shamble = Math.sin(zombieData.animationTime) * (zombieData.isGiant ? 0.2 : 0.1);
                     
-                    zombieData.parts.leftArm.rotation.x = 0.2 + shamble * 0.5;
-                    zombieData.parts.rightArm.rotation.x = 0.2 - shamble * 0.5;
+                    if (zombieData.parts.leftArm && zombieData.parts.rightArm) {
+                        zombieData.parts.leftArm.rotation.x = 0.2 + shamble * 0.5;
+                        zombieData.parts.rightArm.rotation.x = 0.2 - shamble * 0.5;
+                    }
                     
-                    zombie.position.y = this.groundLevel + Math.abs(shamble) * 0.03;
+                    zombie.position.y = this.groundLevel + Math.abs(shamble) * (zombieData.isGiant ? 0.1 : 0.03);
                     
-                    // Normal attack when not in car
+                    // Attack when not in car
                     if (!this.inCar) {
                         const distance = BABYLON.Vector3.Distance(zombie.position, this.camera.position);
-                        if (distance < 6 && Date.now() - zombieData.lastAttack > 2500) {
-                            this.health -= 15;
+                        const attackRange = zombieData.isGiant ? 8 : 6; // Giant zombies have longer reach
+                        const attackCooldown = zombieData.isGiant ? 2000 : 2500; // Giant zombies attack faster
+                        
+                        if (distance < attackRange && Date.now() - zombieData.lastAttack > attackCooldown) {
+                            const damage = zombieData.isGiant ? zombieData.attackDamage : 15;
+                            this.health -= damage;
                             zombieData.lastAttack = Date.now();
                             this.updateUI();
                             
+                            if (zombieData.isGiant) {
+                                this.showInteractionPrompt(`💀 GIANT ZOMBIE ATTACKED! -${damage} HP! 💀`);
+                            }
+                            
                             if (this.health <= 0) {
                                 setTimeout(() => {
-                                    alert(`💀 GAME OVER! 💀\n\n🏆 Kills: ${this.kills}\n\nTap reload to try again!`);
+                                    const gameOverMsg = zombieData.isGiant ? 
+                                        `💀 KILLED BY GIANT ZOMBIE! 💀\n\n🏆 Kills: ${this.kills}\n\nYou almost had it!` :
+                                        `💀 GAME OVER! 💀\n\n🏆 Kills: ${this.kills}\n\nTap reload to try again!`;
+                                    alert(gameOverMsg);
                                     location.reload();
                                 }, 500);
                             }
@@ -1721,68 +1770,89 @@
                 this.giantZombie = giantZombie;
                 this.giantZombieTarget = this.camera.position.clone();
                 
-                // Add to zombies list for shooting detection
-                this.zombies.push({
+                // Add to zombies list for shooting detection - MUCH HARDER TO KILL
+                const giantZombieData = {
                     group: giantZombie,
                     mesh: giantZombie.getChildMeshes()[0],
-                    parts: { body: giantZombie.getChildMeshes()[0] },
+                    parts: { 
+                        body: giantZombie.getChildMeshes()[0],
+                        head: giantZombie.getChildMeshes()[1],
+                        leftArm: giantZombie.getChildMeshes()[2],
+                        rightArm: giantZombie.getChildMeshes()[3],
+                        leftLeg: giantZombie.getChildMeshes()[4],
+                        rightLeg: giantZombie.getChildMeshes()[5]
+                    },
                     id: Date.now(),
-                    health: 10, // Takes more hits
-                    speed: 0.3,
+                    health: 25, // MUCH MORE HEALTH - takes 25 shots!
+                    maxHealth: 25,
+                    speed: 0.2, // Slower but more threatening
                     lastAttack: 0,
-                    isGiant: true
-                });
+                    isGiant: true,
+                    animationTime: 0,
+                    attackDamage: 40, // MASSIVE DAMAGE
+                    lastRoar: 0
+                };
                 
-                console.log('Giant zombie spawned!');
+                this.zombies.push(giantZombieData);
+                
+                // Scary introduction
+                this.showInteractionPrompt('💀 GIANT ZOMBIE DETECTED! 💀');
+                setTimeout(() => {
+                    this.showInteractionPrompt('🚨 IT TAKES 25 SHOTS TO KILL! 🚨');
+                }, 2000);
+                
+                console.log('🧟‍♂️ TERRIFYING Giant zombie spawned with 25 health!');
             }
             
             createGiantZombie() {
                 const zombieGroup = new BABYLON.TransformNode("giantZombie", this.scene);
                 
-                // Much larger torso
+                // MASSIVE torso - even bigger!
                 const torso = BABYLON.MeshBuilder.CreateCylinder("giantTorso", {
-                    height: 8, diameterTop: 4, diameterBottom: 3, tessellation: 16
+                    height: 12, diameterTop: 6, diameterBottom: 5, tessellation: 16
                 }, this.scene);
-                torso.position.y = 4;
+                torso.position.y = 6;
                 torso.parent = zombieGroup;
                 
-                // Giant head
-                const head = BABYLON.MeshBuilder.CreateSphere("giantHead", {diameter: 3}, this.scene);
-                head.position.y = 9;
+                // HUGE terrifying head
+                const head = BABYLON.MeshBuilder.CreateSphere("giantHead", {diameter: 4.5}, this.scene);
+                head.position.y = 13;
+                head.scaling.set(1.2, 1.0, 1.1); // Distorted scary shape
                 head.parent = zombieGroup;
                 
-                // Giant arms
+                // GIANT menacing arms
                 const leftArm = BABYLON.MeshBuilder.CreateCylinder("giantLeftArm", {
-                    height: 6, diameter: 1.5, tessellation: 12
+                    height: 8, diameter: 2.2, tessellation: 12
                 }, this.scene);
-                leftArm.position.set(-3, 6, 0);
-                leftArm.rotation.z = Math.PI / 6;
+                leftArm.position.set(-4.5, 8, 0);
+                leftArm.rotation.set(0.3, 0, 0.5); // Menacing pose
                 leftArm.parent = zombieGroup;
                 
                 const rightArm = BABYLON.MeshBuilder.CreateCylinder("giantRightArm", {
-                    height: 6, diameter: 1.5, tessellation: 12
+                    height: 8, diameter: 2.2, tessellation: 12
                 }, this.scene);
-                rightArm.position.set(3, 6, 0);
-                rightArm.rotation.z = -Math.PI / 6;
+                rightArm.position.set(4.5, 8, 0);
+                rightArm.rotation.set(0.3, 0, -0.5); // Menacing pose
                 rightArm.parent = zombieGroup;
                 
-                // Giant legs
+                // MASSIVE legs
                 const leftLeg = BABYLON.MeshBuilder.CreateCylinder("giantLeftLeg", {
-                    height: 4, diameter: 1.8, tessellation: 12
+                    height: 6, diameter: 2.5, tessellation: 12
                 }, this.scene);
-                leftLeg.position.set(-1, 2, 0);
+                leftLeg.position.set(-1.5, 3, 0);
                 leftLeg.parent = zombieGroup;
                 
                 const rightLeg = BABYLON.MeshBuilder.CreateCylinder("giantRightLeg", {
-                    height: 4, diameter: 1.8, tessellation: 12
+                    height: 6, diameter: 2.5, tessellation: 12
                 }, this.scene);
-                rightLeg.position.set(1, 2, 0);
+                rightLeg.position.set(1.5, 3, 0);
                 rightLeg.parent = zombieGroup;
                 
-                // Scary red material for giant zombie
+                // TERRIFYING dark material for giant zombie
                 const giantMaterial = new BABYLON.StandardMaterial("giantZombieMaterial", this.scene);
-                giantMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.1, 0.1); // Dark red
-                giantMaterial.emissiveColor = new BABYLON.Color3(0.2, 0.05, 0.05);
+                giantMaterial.diffuseColor = new BABYLON.Color3(0.15, 0.05, 0.05); // Very dark red/black
+                giantMaterial.emissiveColor = new BABYLON.Color3(0.3, 0.1, 0.1); // More intense glow
+                giantMaterial.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1); // Dull specular
                 
                 torso.material = giantMaterial;
                 head.material = giantMaterial;
@@ -1791,21 +1861,40 @@
                 leftLeg.material = giantMaterial;
                 rightLeg.material = giantMaterial;
                 
-                // Glowing red eyes
-                const leftEye = BABYLON.MeshBuilder.CreateSphere("giantLeftEye", {diameter: 0.3}, this.scene);
-                leftEye.position.set(-0.5, 0.2, -1.2);
+                // MASSIVE glowing red eyes - TERRIFYING!
+                const leftEye = BABYLON.MeshBuilder.CreateSphere("giantLeftEye", {diameter: 0.6}, this.scene);
+                leftEye.position.set(-0.8, 0.3, -1.8);
                 leftEye.parent = head;
                 
-                const rightEye = BABYLON.MeshBuilder.CreateSphere("giantRightEye", {diameter: 0.3}, this.scene);
-                rightEye.position.set(0.5, 0.2, -1.2);
+                const rightEye = BABYLON.MeshBuilder.CreateSphere("giantRightEye", {diameter: 0.6}, this.scene);
+                rightEye.position.set(0.8, 0.3, -1.8);
                 rightEye.parent = head;
                 
                 const eyeMaterial = new BABYLON.StandardMaterial("giantEyes", this.scene);
-                eyeMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0);
-                eyeMaterial.emissiveColor = new BABYLON.Color3(0.8, 0.1, 0.1);
+                eyeMaterial.diffuseColor = new BABYLON.Color3(1, 0.1, 0); // Intense red
+                eyeMaterial.emissiveColor = new BABYLON.Color3(1, 0.3, 0.1); // Bright glowing red
                 
                 leftEye.material = eyeMaterial;
                 rightEye.material = eyeMaterial;
+                
+                // Add scary claws/spikes on arms
+                for (let i = 0; i < 3; i++) {
+                    const leftClaw = BABYLON.MeshBuilder.CreateBox("leftClaw", {
+                        width: 0.3, height: 1.5, depth: 0.2
+                    }, this.scene);
+                    leftClaw.position.set(-0.5 + i * 0.3, -3, 0);
+                    leftClaw.rotation.x = Math.PI / 6;
+                    leftClaw.parent = leftArm;
+                    leftClaw.material = eyeMaterial; // Red glowing claws
+                    
+                    const rightClaw = BABYLON.MeshBuilder.CreateBox("rightClaw", {
+                        width: 0.3, height: 1.5, depth: 0.2
+                    }, this.scene);
+                    rightClaw.position.set(-0.5 + i * 0.3, -3, 0);
+                    rightClaw.rotation.x = Math.PI / 6;
+                    rightClaw.parent = rightArm;
+                    rightClaw.material = eyeMaterial; // Red glowing claws
+                }
                 
                 return zombieGroup;
             }
