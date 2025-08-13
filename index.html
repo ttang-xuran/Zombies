@@ -284,9 +284,9 @@
         <div>• <span class="warning">📱 MOBILE: Joystick + DRAG ANYWHERE to aim</span></div>
         <div>• <span class="warning">📱 TAP FIRE button to shoot (iPhone optimized!)</span></div>
         <div>• <span class="warning">🖥️ DESKTOP: WASD移动 + 🎯鼠标位置=瞄准镜位置 + 左键射击</span></div>
-        <div>• <span class="warning">🏢 Buildings: Walk close + S键 or F键</span></div>
+        <div>• <span class="warning">🏢 Buildings: Walk close + F键进入 + G键退出</span></div>
         <div>• <span class="warning">👹 FACE GIANT ZOMBIES inside buildings!</span></div>
-        <div>• <span class="warning">🚗 Cars: Walk close + S键 or F键</span></div>
+        <div>• <span class="warning">🚗 Cars: Walk close + F键进入 + G键退出</span></div>
         <div>• <span class="warning">Responsive aiming for iPhone and desktop!</span></div>
         <button class="start-button" onclick="startMobileGame()">🎮 START GAME</button>
     </div>
@@ -993,8 +993,26 @@
                         this.shoot();
                     }
                     
-                    // Interactions with F key or S key
-                    if (e.code === 'KeyF' || e.code === 'KeyS') {
+                    // F key - Enter cars and buildings  
+                    if (e.code === 'KeyF') {
+                        e.preventDefault();
+                        
+                        // Enter building if near one
+                        if (this.nearBuilding) {
+                            this.enterBuilding(this.nearBuilding);
+                            return;
+                        }
+                        
+                        // Enter car if near one
+                        const nearCar = this.cars.find(car => car.nearPlayer && car.available);
+                        if (nearCar && !this.inCar) {
+                            this.enterCar(nearCar);
+                            return;
+                        }
+                    }
+                    
+                    // G key - Exit cars and buildings
+                    if (e.code === 'KeyG') {
                         e.preventDefault();
                         
                         // Exit building if inside
@@ -1003,19 +1021,7 @@
                             return;
                         }
                         
-                        // Enter building if near one
-                        if (this.nearBuilding) {
-                            this.enterBuilding(this.nearBuilding);
-                            return;
-                        }
-                        
-                        // Car interactions
-                        const nearCar = this.cars.find(car => car.nearPlayer && car.available);
-                        if (nearCar && !this.inCar) {
-                            this.enterCar(nearCar);
-                            return;
-                        }
-                        
+                        // Exit car if in car
                         if (this.inCar) {
                             this.exitCar();
                             return;
@@ -1440,7 +1446,9 @@
                     const distance = BABYLON.Vector3.Distance(this.camera.position, car.group.position);
                     if (distance < 8) {
                         // Show interaction prompt
-                        this.showInteractionPrompt("Press and hold FIRE button to enter car");
+                        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                        const carText = isMobile ? "Press and hold FIRE button to enter car" : "Press F key to enter car";
+                        this.showInteractionPrompt(carText);
                         
                         // Check for long press on fire button to enter car
                         // This will be handled in the fire button logic
@@ -1455,7 +1463,9 @@
                 this.nearBuilding = null;
                 
                 if (this.insideBuilding) {
-                    this.showInteractionPrompt("Hold FIRE button to exit building");
+                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                    const exitText = isMobile ? "Hold FIRE button to exit building" : "Press G key to exit building";
+                    this.showInteractionPrompt(exitText);
                     return;
                 }
                 
@@ -1463,7 +1473,9 @@
                     const distance = BABYLON.Vector3.Distance(this.camera.position, building.entrance.position);
                     if (distance < 15) { // Increased detection range
                         this.nearBuilding = building;
-                        this.showInteractionPrompt(`🏢 Hold FIRE button to enter ${building.name}`);
+                        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                        const enterText = isMobile ? `🏢 Hold FIRE button to enter ${building.name}` : `🏢 Press F key to enter ${building.name}`;
+                        this.showInteractionPrompt(enterText);
                     }
                 });
             }
