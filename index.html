@@ -2148,7 +2148,7 @@
                     if (this.inHelicopter) {
                         if (isAscending) {
                             this.helicopterAltitude += 1.2; // Faster than keyboard
-                            this.helicopterAltitude = Math.min(this.helicopterAltitude, 100);
+                            this.helicopterAltitude = Math.min(this.helicopterAltitude, 150); // High enough for skyscraper
                         }
                         if (isDescending) {
                             this.helicopterAltitude -= 1.2; // Faster than keyboard  
@@ -2274,7 +2274,7 @@
                     if (this.inHelicopter) {
                         if (this.keyState['ArrowUp']) {
                             this.helicopterAltitude += 0.8;
-                            this.helicopterAltitude = Math.min(this.helicopterAltitude, 100);
+                            this.helicopterAltitude = Math.min(this.helicopterAltitude, 150); // High enough for skyscraper
                         }
                         if (this.keyState['ArrowDown']) {
                             this.helicopterAltitude -= 0.8;
@@ -3459,7 +3459,7 @@
                 // Smooth altitude controls (reduced speed to prevent vertigo)
                 if (this.keyState['Space']) {
                     this.helicopterAltitude += 0.4; // Reduced from 0.8
-                    this.helicopterAltitude = Math.min(this.helicopterAltitude, 100);
+                    this.helicopterAltitude = Math.min(this.helicopterAltitude, 150); // High enough for skyscraper (120 units)
                 }
                 if (this.keyState['ShiftLeft'] || this.keyState['ShiftRight']) {
                     this.helicopterAltitude -= 0.4; // Reduced from 0.8
@@ -3823,8 +3823,8 @@
                 this.currentHelicopter.group.position.y = this.skyscraperHelipad.position.y + 1; // Just above helipad
                 this.currentHelicopter.group.position.z = this.skyscraperHelipad.position.z;
                 
-                // Set altitude to landed position
-                this.helicopterAltitude = 3; // Reset to minimum safe altitude
+                // Set altitude to helipad level (skyscraper top is at groundLevel + 121, helicopter base is at groundLevel + 8)
+                this.helicopterAltitude = 113; // Correct altitude for skyscraper helipad (121 - 8 = 113)
                 
                 // Update camera position
                 const cameraPos = this.currentHelicopter.group.position.clone();
