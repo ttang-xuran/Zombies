@@ -790,6 +790,9 @@
                     mesh: helipad
                 };
                 
+                // CREATE SUPER GIANT MONSTER ON TOP OF SKYSCRAPER
+                this.createGiantMonster();
+                
                 this.buildings.push({
                     name: "Skyscraper",
                     mesh: skyscraper,
@@ -2146,6 +2149,205 @@
                 console.log('Desktop keyboard controls enabled');
             }
             
+            createGiantMonster() {
+                // SUPER GIANT MONSTER - 40 units tall, stands on skyscraper
+                const monsterGroup = new BABYLON.TransformNode("giantMonster", this.scene);
+                
+                // Position monster on top of skyscraper
+                monsterGroup.position.set(-120, this.groundLevel + 125, 80);
+                
+                // MASSIVE MONSTER HEAD - 8 units diameter
+                const monsterHead = BABYLON.MeshBuilder.CreateSphere("monsterHead", {
+                    diameter: 8, segments: 32
+                }, this.scene);
+                monsterHead.position.y = 35; // 35 units above skyscraper
+                monsterHead.scaling.set(1.2, 1.0, 1.1); // Slightly deformed
+                monsterHead.parent = monsterGroup;
+                
+                // GIANT NECK
+                const monsterNeck = BABYLON.MeshBuilder.CreateCylinder("monsterNeck", {
+                    height: 4, diameter: 5, tessellation: 16
+                }, this.scene);
+                monsterNeck.position.y = 31;
+                monsterNeck.parent = monsterGroup;
+                
+                // MASSIVE TORSO - bigger than any building
+                const monsterTorso = BABYLON.MeshBuilder.CreateSphere("monsterTorso", {
+                    diameter: 15, segments: 24
+                }, this.scene);
+                monsterTorso.position.y = 22;
+                monsterTorso.scaling.set(1.0, 1.4, 0.9); // Tall torso
+                monsterTorso.parent = monsterGroup;
+                
+                // GIANT ARMS - can reach helicopters
+                const leftArm = BABYLON.MeshBuilder.CreateCylinder("monsterLeftArm", {
+                    height: 20, diameter: 3, tessellation: 16
+                }, this.scene);
+                leftArm.position.set(-9, 25, 0);
+                leftArm.rotation.z = Math.PI / 6; // Angled outward
+                leftArm.parent = monsterGroup;
+                
+                const rightArm = BABYLON.MeshBuilder.CreateCylinder("monsterRightArm", {
+                    height: 20, diameter: 3, tessellation: 16
+                }, this.scene);
+                rightArm.position.set(9, 25, 0);
+                rightArm.rotation.z = -Math.PI / 6; // Angled outward
+                rightArm.parent = monsterGroup;
+                
+                // MASSIVE HANDS - for attacking helicopters
+                const leftHand = BABYLON.MeshBuilder.CreateSphere("monsterLeftHand", {
+                    diameter: 4, segments: 16
+                }, this.scene);
+                leftHand.position.set(-16, 15, 0);
+                leftHand.parent = monsterGroup;
+                
+                const rightHand = BABYLON.MeshBuilder.CreateSphere("monsterRightHand", {
+                    diameter: 4, segments: 16
+                }, this.scene);
+                rightHand.position.set(16, 15, 0);
+                rightHand.parent = monsterGroup;
+                
+                // GIANT LEGS - standing on skyscraper
+                const leftLeg = BABYLON.MeshBuilder.CreateCylinder("monsterLeftLeg", {
+                    height: 15, diameter: 4, tessellation: 16
+                }, this.scene);
+                leftLeg.position.set(-4, 7, 0);
+                leftLeg.parent = monsterGroup;
+                
+                const rightLeg = BABYLON.MeshBuilder.CreateCylinder("monsterRightLeg", {
+                    height: 15, diameter: 4, tessellation: 16
+                }, this.scene);
+                rightLeg.position.set(4, 7, 0);
+                rightLeg.parent = monsterGroup;
+                
+                // GIANT FEET - massive footprint
+                const leftFoot = BABYLON.MeshBuilder.CreateBox("monsterLeftFoot", {
+                    width: 6, height: 2, depth: 8
+                }, this.scene);
+                leftFoot.position.set(-4, -1, 2);
+                leftFoot.parent = monsterGroup;
+                
+                const rightFoot = BABYLON.MeshBuilder.CreateBox("monsterRightFoot", {
+                    width: 6, height: 2, depth: 8
+                }, this.scene);
+                rightFoot.position.set(4, -1, 2);
+                rightFoot.parent = monsterGroup;
+                
+                // TERRIFYING MONSTER MATERIAL - dark and menacing
+                const monsterMaterial = new BABYLON.StandardMaterial("monsterMaterial", this.scene);
+                monsterMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.15, 0.1); // Dark brown flesh
+                monsterMaterial.emissiveColor = new BABYLON.Color3(0.1, 0.05, 0.05); // Slight red glow
+                monsterMaterial.roughness = 0.9;
+                
+                // Apply material to all monster parts
+                [monsterHead, monsterNeck, monsterTorso, leftArm, rightArm, 
+                 leftHand, rightHand, leftLeg, rightLeg, leftFoot, rightFoot].forEach(part => {
+                    part.material = monsterMaterial;
+                });
+                
+                // GLOWING RED EYES - terrifying effect
+                const leftEye = BABYLON.MeshBuilder.CreateSphere("monsterLeftEye", {
+                    diameter: 1.2, segments: 16
+                }, this.scene);
+                leftEye.position.set(-1.5, 35.5, -3.5);
+                leftEye.parent = monsterGroup;
+                
+                const rightEye = BABYLON.MeshBuilder.CreateSphere("monsterRightEye", {
+                    diameter: 1.2, segments: 16
+                }, this.scene);
+                rightEye.position.set(1.5, 35.5, -3.5);
+                rightEye.parent = monsterGroup;
+                
+                const eyeMaterial = new BABYLON.StandardMaterial("monsterEyeMaterial", this.scene);
+                eyeMaterial.diffuseColor = new BABYLON.Color3(1, 0.1, 0.1); // Bright red
+                eyeMaterial.emissiveColor = new BABYLON.Color3(0.8, 0.2, 0.2); // Glowing effect
+                leftEye.material = eyeMaterial;
+                rightEye.material = eyeMaterial;
+                
+                // Store monster data for attack system
+                this.giantMonster = {
+                    group: monsterGroup,
+                    leftHand: leftHand,
+                    rightHand: rightHand,
+                    position: monsterGroup.position.clone(),
+                    attackRange: 50, // Can attack helicopters within 50 units
+                    damage: 75, // Massive damage to helicopters
+                    lastAttack: 0,
+                    attackCooldown: 2000, // 2 second attack cooldown
+                    health: 1000, // Super tough boss
+                    maxHealth: 1000,
+                    isAttacking: false
+                };
+                
+                // Start idle animations
+                this.startMonsterIdleAnimation();
+                
+                console.log('Giant monster created on skyscraper!');
+                return this.giantMonster;
+            }
+            
+            startMonsterIdleAnimation() {
+                if (!this.giantMonster) return;
+                
+                // Breathing animation - subtle chest rise and fall
+                const breathingAnimation = () => {
+                    if (!this.giantMonster) return;
+                    
+                    const time = Date.now() * 0.001; // Slow breathing
+                    const breathScale = 1 + Math.sin(time) * 0.02; // Very subtle breathing
+                    
+                    // Apply breathing to torso
+                    const torso = this.giantMonster.group.getChildMeshes().find(mesh => mesh.name === "monsterTorso");
+                    if (torso) {
+                        torso.scaling.y = breathScale;
+                    }
+                    
+                    requestAnimationFrame(breathingAnimation);
+                };
+                
+                // Head turning animation - monster watches the city
+                const headTurnAnimation = () => {
+                    if (!this.giantMonster) return;
+                    
+                    const time = Date.now() * 0.0008; // Slow head movement
+                    const headRotation = Math.sin(time) * 0.3; // Turn head left and right
+                    
+                    // Apply rotation to head
+                    const head = this.giantMonster.group.getChildMeshes().find(mesh => mesh.name === "monsterHead");
+                    if (head) {
+                        head.rotation.y = headRotation;
+                    }
+                    
+                    requestAnimationFrame(headTurnAnimation);
+                };
+                
+                // Eye glow pulsing effect
+                const eyeGlowAnimation = () => {
+                    if (!this.giantMonster) return;
+                    
+                    const time = Date.now() * 0.005; // Faster pulse for menacing effect
+                    const glowIntensity = 0.3 + Math.sin(time) * 0.2; // Pulsing glow
+                    
+                    // Apply to eyes
+                    const leftEye = this.giantMonster.group.getChildMeshes().find(mesh => mesh.name === "monsterLeftEye");
+                    const rightEye = this.giantMonster.group.getChildMeshes().find(mesh => mesh.name === "monsterRightEye");
+                    
+                    if (leftEye && leftEye.material) {
+                        leftEye.material.emissiveColor = new BABYLON.Color3(glowIntensity, glowIntensity * 0.2, glowIntensity * 0.2);
+                    }
+                    if (rightEye && rightEye.material) {
+                        rightEye.material.emissiveColor = new BABYLON.Color3(glowIntensity, glowIntensity * 0.2, glowIntensity * 0.2);
+                    }
+                    
+                    requestAnimationFrame(eyeGlowAnimation);
+                };
+                
+                // Start all animations
+                breathingAnimation();
+                headTurnAnimation();
+                eyeGlowAnimation();
+            }
+            
             createRealisticZombie(zombieType = 'normal') {
                 const zombieGroup = new BABYLON.TransformNode(`${zombieType}Zombie`, this.scene);
                 
@@ -3086,7 +3288,162 @@
                 const hoverTime = Date.now() * 0.002;
                 this.currentHelicopter.group.position.y += Math.sin(hoverTime) * 0.2;
                 
+                // GIANT MONSTER ATTACK SYSTEM - Check if helicopter is too close to monster
+                this.checkGiantMonsterAttack();
+                
                 console.log(`🚁 Flying at altitude: ${this.helicopterAltitude.toFixed(1)}`);
+            }
+            
+            checkGiantMonsterAttack() {
+                if (!this.giantMonster || !this.inHelicopter) return;
+                
+                const helicopterPos = this.currentHelicopter.group.position;
+                const monsterPos = this.giantMonster.position;
+                const distance = BABYLON.Vector3.Distance(helicopterPos, monsterPos);
+                
+                // Monster can attack if helicopter is within range
+                if (distance <= this.giantMonster.attackRange) {
+                    const currentTime = Date.now();
+                    
+                    // Show warning when entering monster's range
+                    if (!this.giantMonster.playerWarned) {
+                        this.showInteractionPrompt("⚠️ GIANT MONSTER NEARBY! GET AWAY FROM SKYSCRAPER!");
+                        this.giantMonster.playerWarned = true;
+                        
+                        // Clear warning after 3 seconds
+                        setTimeout(() => {
+                            if (this.giantMonster) {
+                                this.giantMonster.playerWarned = false;
+                            }
+                        }, 3000);
+                    }
+                    
+                    // Monster attacks if cooldown is over
+                    if (currentTime - this.giantMonster.lastAttack > this.giantMonster.attackCooldown) {
+                        this.executeGiantMonsterAttack(distance);
+                        this.giantMonster.lastAttack = currentTime;
+                    }
+                    
+                    // Animate monster attacking (swinging arms)
+                    this.animateMonsterAttack();
+                } else {
+                    // Reset warning when safe distance
+                    this.giantMonster.playerWarned = false;
+                }
+            }
+            
+            executeGiantMonsterAttack(distance) {
+                if (!this.currentHelicopter) return;
+                
+                // Damage calculation based on distance (closer = more damage)
+                const distanceMultiplier = Math.max(0.3, 1 - (distance / this.giantMonster.attackRange));
+                const actualDamage = Math.floor(this.giantMonster.damage * distanceMultiplier);
+                
+                // Apply damage to helicopter
+                this.currentHelicopter.health -= actualDamage;
+                this.currentHelicopter.lastDamage = Date.now();
+                
+                // Visual effects - shake helicopter from monster hit
+                const shakeIntensity = 5 * distanceMultiplier;
+                const originalPos = this.currentHelicopter.group.position.clone();
+                
+                // Shake effect
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        if (this.currentHelicopter) {
+                            this.currentHelicopter.group.position.x = originalPos.x + (Math.random() - 0.5) * shakeIntensity;
+                            this.currentHelicopter.group.position.z = originalPos.z + (Math.random() - 0.5) * shakeIntensity;
+                        }
+                    }, i * 100);
+                }
+                
+                // Restore position after shake
+                setTimeout(() => {
+                    if (this.currentHelicopter) {
+                        this.currentHelicopter.group.position = originalPos;
+                    }
+                }, 500);
+                
+                // Show damage message
+                this.showInteractionPrompt(`🦍 MONSTER HIT! -${actualDamage} damage! Health: ${this.currentHelicopter.health}`);
+                
+                // Push helicopter away from monster
+                const pushDirection = helicopterPos.subtract(this.giantMonster.position).normalize();
+                const pushForce = 8 * distanceMultiplier;
+                this.currentHelicopter.group.position.addInPlace(pushDirection.scale(pushForce));
+                
+                // Check if helicopter is destroyed
+                if (this.currentHelicopter.health <= 0) {
+                    this.destroyHelicopter();
+                }
+                
+                console.log(`🦍 Giant monster attacked helicopter! Damage: ${actualDamage}, Distance: ${distance.toFixed(1)}`);
+            }
+            
+            animateMonsterAttack() {
+                if (!this.giantMonster || this.giantMonster.isAttacking) return;
+                
+                this.giantMonster.isAttacking = true;
+                const leftHand = this.giantMonster.leftHand;
+                const rightHand = this.giantMonster.rightHand;
+                
+                // Store original positions
+                const leftOriginal = leftHand.position.clone();
+                const rightOriginal = rightHand.position.clone();
+                
+                // Animate hands swinging toward helicopter
+                const swingDuration = 800; // ms
+                const startTime = Date.now();
+                
+                const animateSwing = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / swingDuration, 1);
+                    const swingPhase = Math.sin(progress * Math.PI); // Smooth swing motion
+                    
+                    // Swing hands forward and upward
+                    leftHand.position.z = leftOriginal.z - swingPhase * 20;
+                    leftHand.position.y = leftOriginal.y + swingPhase * 10;
+                    
+                    rightHand.position.z = rightOriginal.z - swingPhase * 20;
+                    rightHand.position.y = rightOriginal.y + swingPhase * 10;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animateSwing);
+                    } else {
+                        // Return to original positions
+                        leftHand.position = leftOriginal;
+                        rightHand.position = rightOriginal;
+                        this.giantMonster.isAttacking = false;
+                    }
+                };
+                
+                animateSwing();
+            }
+            
+            destroyHelicopter() {
+                if (!this.currentHelicopter) return;
+                
+                // Explosion effect (could be enhanced with particles)
+                this.showInteractionPrompt("💥 HELICOPTER DESTROYED BY GIANT MONSTER!");
+                
+                // Force exit helicopter
+                this.exitHelicopter();
+                
+                // Remove helicopter from scene
+                this.currentHelicopter.group.dispose();
+                this.currentHelicopter = null;
+                
+                // Player falls and takes damage
+                this.playerHealth -= 50;
+                if (this.playerHealth < 0) this.playerHealth = 0;
+                
+                // Respawn helicopter after 30 seconds
+                setTimeout(() => {
+                    this.createHelicopter();
+                    this.showInteractionPrompt("🚁 New helicopter available!");
+                }, 30000);
+                
+                console.log("🚁💥 Helicopter destroyed by giant monster!");
             }
             
             checkCarInteraction() {
