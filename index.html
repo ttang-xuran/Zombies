@@ -422,7 +422,7 @@
                 const school = BABYLON.MeshBuilder.CreateBox("school", {
                     width: 60, height: 25, depth: 40
                 }, this.scene);
-                school.position.set(-80, this.groundLevel + 12.5, -60);
+                school.position.set(-80, this.groundLevel + 12.0, -60); // Lowered slightly to ensure bottom touches ground
                 
                 const schoolMaterial = new BABYLON.StandardMaterial("schoolMat", this.scene);
                 schoolMaterial.diffuseColor = new BABYLON.Color3(0.8, 0.7, 0.6); // Light brick color
@@ -461,7 +461,7 @@
                 const policeStation = BABYLON.MeshBuilder.CreateBox("policeStation", {
                     width: 45, height: 20, depth: 35
                 }, this.scene);
-                policeStation.position.set(70, this.groundLevel + 10, -50);
+                policeStation.position.set(70, this.groundLevel + 9.5, -50); // Lowered slightly
                 
                 const policeMaterial = new BABYLON.StandardMaterial("policeMat", this.scene);
                 policeMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.5); // Blue-gray
@@ -537,7 +537,7 @@
                 const gasStation = BABYLON.MeshBuilder.CreateBox("gasStation", {
                     width: 40, height: 18, depth: 30
                 }, this.scene);
-                gasStation.position.set(90, this.groundLevel + 9, 70);
+                gasStation.position.set(90, this.groundLevel + 8.5, 70); // Lowered slightly
                 
                 const gasMaterial = new BABYLON.StandardMaterial("gasMat", this.scene);
                 gasMaterial.diffuseColor = new BABYLON.Color3(0.8, 0.8, 0.6); // Light yellow
@@ -586,7 +586,7 @@
                 const mall = BABYLON.MeshBuilder.CreateBox("shoppingMall", {
                     width: 70, height: 22, depth: 50
                 }, this.scene);
-                mall.position.set(-90, this.groundLevel + 11, 80);
+                mall.position.set(-90, this.groundLevel + 10.5, 80); // Lowered slightly
                 
                 const mallMaterial = new BABYLON.StandardMaterial("mallMat", this.scene);
                 mallMaterial.diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.8); // Light blue-gray
@@ -625,7 +625,7 @@
                 const hospital = BABYLON.MeshBuilder.CreateBox("hospital", {
                     width: 55, height: 30, depth: 45
                 }, this.scene);
-                hospital.position.set(80, this.groundLevel + 15, -80);
+                hospital.position.set(80, this.groundLevel + 14.5, -80); // Lowered slightly
                 
                 const hospitalMaterial = new BABYLON.StandardMaterial("hospitalMat", this.scene);
                 hospitalMaterial.diffuseColor = new BABYLON.Color3(0.9, 0.9, 0.9); // White
@@ -1655,7 +1655,12 @@
                     
                     const movement = direction.scale(moveSpeed);
                     movement.y = 0;
-                    zombie.position.addInPlace(movement);
+                    
+                    // Check for building collision for zombies too
+                    const newZombiePosition = zombie.position.clone().add(movement);
+                    if (!this.checkBuildingCollision(newZombiePosition)) {
+                        zombie.position.addInPlace(movement);
+                    }
                     
                     zombie.position.y = this.groundLevel;
                     zombie.lookAt(this.camera.position);
@@ -1730,7 +1735,12 @@
                     const moveDirection = forward.scale(this.moveVector.z).add(right.scale(this.moveVector.x));
                     
                     console.log('KEYBOARD MOVEMENT - moveVector.x:', this.moveVector.x, 'moveVector.z:', this.moveVector.z);
-                    this.camera.position.addInPlace(moveDirection.scale(speed));
+                    
+                    // Check for building collision before moving
+                    const newPosition = this.camera.position.clone().add(moveDirection.scale(speed));
+                    if (!this.checkBuildingCollision(newPosition)) {
+                        this.camera.position.addInPlace(moveDirection.scale(speed));
+                    }
                 }
                 
                 this.camera.position.y = this.groundLevel + this.playerHeight;
@@ -1796,6 +1806,50 @@
                         car.nearPlayer = false;
                     }
                 });
+            }
+            
+            checkBuildingCollision(position) {
+                // Check collision with all building exteriors (when not inside)
+                if (this.insideBuilding) return false; // No collision when inside
+                
+                for (const building of this.buildings) {
+                    const buildingPos = building.position;
+                    let buildingWidth, buildingDepth;
+                    
+                    // Get building dimensions based on type
+                    switch(building.type) {
+                        case 'school':
+                            buildingWidth = 60; buildingDepth = 40; break;
+                        case 'police':
+                            buildingWidth = 45; buildingDepth = 35; break;
+                        case 'gas':
+                            buildingWidth = 40; buildingDepth = 30; break;
+                        case 'mall':
+                            buildingWidth = 70; buildingDepth = 50; break;
+                        case 'hospital':
+                            buildingWidth = 55; buildingDepth = 45; break;
+                        default:
+                            buildingWidth = 50; buildingDepth = 40;
+                    }
+                    
+                    // Check if position is inside building bounds (with small buffer)
+                    const buffer = 2; // 2-unit buffer around building
+                    if (position.x > buildingPos.x - buildingWidth/2 - buffer &&
+                        position.x < buildingPos.x + buildingWidth/2 + buffer &&
+                        position.z > buildingPos.z - buildingDepth/2 - buffer &&
+                        position.z < buildingPos.z + buildingDepth/2 + buffer) {
+                        
+                        // Check if near entrance (allow entry through door)
+                        const entranceDistance = BABYLON.Vector3.Distance(position, building.entrance.position);
+                        if (entranceDistance < 8) {
+                            return false; // Allow movement near entrance
+                        }
+                        
+                        return true; // Collision detected, block movement
+                    }
+                }
+                
+                return false; // No collision
             }
             
             checkBuildingInteraction() {
