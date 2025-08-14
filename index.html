@@ -424,8 +424,8 @@
                     targetRotationY: 0,
                     currentRotationX: 0,
                     currentRotationY: 0,
-                    sensitivity: 0.0008,     // Much lower sensitivity - reduced from 0.003
-                    smoothness: 0.15,        // Smooth interpolation factor (higher = smoother)
+                    sensitivity: 0.0015,     // Balanced sensitivity - fast enough for aiming, smooth enough to avoid dizziness
+                    smoothness: 0.18,        // Slightly higher smoothness to compensate for faster sensitivity
                     maxVerticalAngle: Math.PI / 3,   // 60 degrees up/down
                     maxHorizontalAngle: Math.PI / 2, // 90 degrees left/right
                     motionComfort: true,     // Enable comfort features
@@ -470,13 +470,13 @@
                     
                     switch (e.key) {
                         case '1': // Sensitivity down
-                            this.cameraControl.sensitivity = Math.max(0.0002, this.cameraControl.sensitivity - 0.0002);
+                            this.cameraControl.sensitivity = Math.max(0.0008, this.cameraControl.sensitivity - 0.0003);
                             this.showInteractionPrompt(`📉 Mouse sensitivity: ${(this.cameraControl.sensitivity * 1000).toFixed(1)}`);
                             console.log('🎯 Reduced mouse sensitivity to:', this.cameraControl.sensitivity);
                             break;
                             
                         case '2': // Sensitivity up
-                            this.cameraControl.sensitivity = Math.min(0.003, this.cameraControl.sensitivity + 0.0002);
+                            this.cameraControl.sensitivity = Math.min(0.0025, this.cameraControl.sensitivity + 0.0003);
                             this.showInteractionPrompt(`📈 Mouse sensitivity: ${(this.cameraControl.sensitivity * 1000).toFixed(1)}`);
                             console.log('🎯 Increased mouse sensitivity to:', this.cameraControl.sensitivity);
                             break;
@@ -496,9 +496,9 @@
                     }
                 });
                 
-                // Show initial comfort settings
+                // Show initial comfort settings with updated sensitivity info
                 setTimeout(() => {
-                    this.showInteractionPrompt('🎮 COMFORT CONTROLS: 1/2=Sensitivity, 3=Comfort Mode, 4=Smoothness');
+                    this.showInteractionPrompt('🎯 IMPROVED AIMING SPEED! Use 1/2=Sensitivity, 3=Comfort Mode, 4=Smoothness');
                 }, 3000);
             }
             
