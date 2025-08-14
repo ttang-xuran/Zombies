@@ -424,8 +424,9 @@
                     targetRotationY: 0,
                     currentRotationX: 0,
                     currentRotationY: 0,
-                    sensitivity: 0.0015,     // Balanced sensitivity - fast enough for aiming, smooth enough to avoid dizziness
-                    smoothness: 0.18,        // Slightly higher smoothness to compensate for faster sensitivity
+                    sensitivity: 0.0015,     // Base sensitivity for precise aiming
+                    smoothness: 0.18,        // Base smoothness for comfortable movement
+                    currentSmoothness: 0.18, // Dynamic smoothness (changes based on movement)
                     maxVerticalAngle: Math.PI / 3,   // 60 degrees up/down
                     maxHorizontalAngle: Math.PI / 2, // 90 degrees left/right
                     motionComfort: true,     // Enable comfort features
@@ -433,7 +434,14 @@
                     lastMouseY: 0,
                     mouseVelocityX: 0,
                     mouseVelocityY: 0,
-                    velocityDamping: 0.9     // Smooth velocity decay
+                    velocityDamping: 0.9,    // Smooth velocity decay
+                    // TURNING SYSTEM PARAMETERS
+                    quickTurnThreshold: 25,  // Threshold for fast turning
+                    normalTurnThreshold: 15, // Threshold for normal turning
+                    fastTurnMultiplier: 4.5, // Speed boost for fast turns
+                    normalTurnMultiplier: 2.8, // Speed boost for normal turns
+                    fastTurnSmoothness: 0.3, // Reduced smoothness for fast turns
+                    normalTurnSmoothness: 0.5 // Reduced smoothness for normal turns
                 };
                 
                 // Initialize camera rotation targets
@@ -493,13 +501,37 @@
                             this.showInteractionPrompt(`🎯 Camera smoothness: ${(this.cameraControl.smoothness * 100).toFixed(0)}%`);
                             console.log('🎯 Camera smoothness set to:', this.cameraControl.smoothness);
                             break;
+                            
+                        case '5': // Quick 180-degree turn
+                            this.cameraControl.targetRotationY += Math.PI; // Turn around 180 degrees
+                            this.cameraControl.currentSmoothness = 0.4; // Fast but smooth turn
+                            this.showInteractionPrompt('🔄 Quick 180° turn!');
+                            console.log('🔄 Quick 180-degree turn activated');
+                            break;
+                            
+                        case '6': // Decrease turning speed
+                            this.cameraControl.normalTurnMultiplier = Math.max(1.5, this.cameraControl.normalTurnMultiplier - 0.3);
+                            this.cameraControl.fastTurnMultiplier = Math.max(2.0, this.cameraControl.fastTurnMultiplier - 0.5);
+                            this.showInteractionPrompt(`🐌 Slower turning: ${this.cameraControl.normalTurnMultiplier.toFixed(1)}x`);
+                            break;
+                            
+                        case '7': // Increase turning speed
+                            this.cameraControl.normalTurnMultiplier = Math.min(5.0, this.cameraControl.normalTurnMultiplier + 0.3);
+                            this.cameraControl.fastTurnMultiplier = Math.min(8.0, this.cameraControl.fastTurnMultiplier + 0.5);
+                            this.showInteractionPrompt(`⚡ Faster turning: ${this.cameraControl.normalTurnMultiplier.toFixed(1)}x`);
+                            break;
                     }
                 });
                 
-                // Show initial comfort settings with updated sensitivity info
+                // Show initial comfort settings with all turning features
                 setTimeout(() => {
-                    this.showInteractionPrompt('🎯 IMPROVED AIMING SPEED! Use 1/2=Sensitivity, 3=Comfort Mode, 4=Smoothness');
+                    this.showInteractionPrompt('🔄 SMART TURNING! Keys: 1-2=Sens, 3=Comfort, 4=Smooth, 5=QuickTurn, 6-7=TurnSpeed');
                 }, 3000);
+                
+                // Show turning help after a delay
+                setTimeout(() => {
+                    this.showInteractionPrompt('💡 TIP: Move mouse FAST to turn around quickly, SLOW for precise aiming!');
+                }, 8000);
             }
             
             startSmoothCameraUpdates() {
@@ -507,10 +539,10 @@
                 const updateSmoothCamera = () => {
                     if (!this.camera || !this.cameraControl) return;
                     
-                    // Smooth interpolation of camera rotation - prevents instant snapping
-                    const smoothness = this.cameraControl.smoothness;
+                    // Use dynamic smoothness for adaptive control
+                    const smoothness = this.cameraControl.currentSmoothness || this.cameraControl.smoothness;
                     
-                    // Interpolate to target rotation smoothly
+                    // Interpolate to target rotation with dynamic smoothness
                     this.cameraControl.currentRotationX += (this.cameraControl.targetRotationX - this.cameraControl.currentRotationX) * smoothness;
                     this.cameraControl.currentRotationY += (this.cameraControl.targetRotationY - this.cameraControl.currentRotationY) * smoothness;
                     
@@ -529,13 +561,36 @@
             updateCameraTarget(deltaX, deltaY, forceInstant = false) {
                 if (!this.cameraControl) return;
                 
-                const sensitivity = this.cameraControl.sensitivity;
+                // DYNAMIC SENSITIVITY SYSTEM - Fast turning, precise aiming
+                const mouseDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
                 
-                // Calculate velocity-based sensitivity (slower for large movements)
-                const mouseSpeed = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                const dynamicSensitivity = sensitivity * (1 / (1 + mouseSpeed * 0.01));
+                // Detect movement type using configurable thresholds
+                const isLargeMovement = mouseDistance > this.cameraControl.normalTurnThreshold;
+                const isFastMovement = mouseDistance > this.cameraControl.quickTurnThreshold;
                 
-                // Update target rotation (not actual camera rotation)
+                let dynamicSensitivity = this.cameraControl.sensitivity;
+                let dynamicSmoothness = this.cameraControl.smoothness;
+                
+                if (isFastMovement) {
+                    // FAST TURNING - Much higher sensitivity, less smoothness
+                    dynamicSensitivity *= this.cameraControl.fastTurnMultiplier;
+                    dynamicSmoothness = this.cameraControl.fastTurnSmoothness;
+                    console.log('🔄 FAST TURN MODE - High speed turning');
+                } else if (isLargeMovement) {
+                    // NORMAL TURNING - Higher sensitivity, less smoothness  
+                    dynamicSensitivity *= this.cameraControl.normalTurnMultiplier;
+                    dynamicSmoothness = this.cameraControl.normalTurnSmoothness;
+                    console.log('↻ TURN MODE - Turning around');
+                } else {
+                    // PRECISE AIMING - Use base sensitivity and smoothness
+                    dynamicSensitivity *= 1.0; // Base sensitivity for aiming
+                    dynamicSmoothness = this.cameraControl.smoothness; // Base smoothness for aiming
+                }
+                
+                // Apply dynamic smoothness to current camera control
+                this.cameraControl.currentSmoothness = dynamicSmoothness;
+                
+                // Update target rotation with dynamic sensitivity
                 this.cameraControl.targetRotationY += deltaX * dynamicSensitivity;
                 this.cameraControl.targetRotationX += deltaY * dynamicSensitivity;
                 
