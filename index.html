@@ -118,6 +118,38 @@
             box-shadow: 0 0 20px rgba(255, 68, 68, 0.7);
         }
         
+        .helicopter-altitude-controls {
+            position: fixed;
+            right: 40px;
+            bottom: 140px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1001;
+        }
+        
+        .altitude-button {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #44ff44, #00cc00);
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: all;
+            touch-action: none;
+            box-shadow: 0 0 15px rgba(68, 255, 68, 0.7);
+        }
+        
+        .altitude-button:active {
+            transform: scale(0.9);
+            box-shadow: 0 0 10px rgba(68, 255, 68, 0.9);
+        }
+        
         .shoot-zone {
             position: fixed;
             top: 0;
@@ -276,6 +308,10 @@
             <span>🧟</span>
             <span id="zombieCount" style="color: #ff6600;">0</span>
         </div>
+        <div class="ui-row">
+            <span>🚁</span>
+            <span id="helicopterDistance" style="color: #44ff44;">---</span>
+        </div>
     </div>
     
     <div id="instructions">
@@ -300,6 +336,12 @@
     <div class="aim-line" id="aimLine"></div>
     
     <div class="simple-shoot-button" id="shootButton">🔥</div>
+    
+    <!-- Helicopter Altitude Controls (Mobile Only) -->
+    <div class="helicopter-altitude-controls" id="altitudeControls">
+        <div class="altitude-button" id="altitudeUpButton">↑</div>
+        <div class="altitude-button" id="altitudeDownButton">↓</div>
+    </div>
     
     
     <div class="crosshair"></div>
@@ -399,6 +441,10 @@
                 ground.material = groundMaterial;
                 
                 this.createBuildings();
+                this.createRivers();
+                this.createStreetLights();
+                this.createGasCans();
+                this.createDeadBodies();
             }
             
             createBuildings() {
@@ -411,10 +457,13 @@
                 this.createGasStation();
                 this.createShoppingMall();
                 this.createHospital();
+                this.createSkyscraper();
+                this.createOfficeBuildings();
                 
                 // Create streets and cars
                 this.createStreets();
                 this.createCars();
+                this.createHelicopter();
             }
             
             createSchool() {
@@ -663,6 +712,186 @@
                 });
             }
             
+            createSkyscraper() {
+                // MASSIVE SKYSCRAPER - tallest building in the city
+                const skyscraper = BABYLON.MeshBuilder.CreateBox("skyscraper", {
+                    width: 30, height: 120, depth: 30  // Very tall - 120 units high
+                }, this.scene);
+                skyscraper.position.set(-120, this.groundLevel + 60, 80); // Far from other buildings
+                
+                const skyscraperMaterial = new BABYLON.StandardMaterial("skyscraperMat", this.scene);
+                skyscraperMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.35, 0.4); // Dark blue-gray
+                skyscraper.material = skyscraperMaterial;
+                
+                // Add window patterns to make it look realistic
+                for (let floor = 0; floor < 25; floor++) {
+                    for (let window = 0; window < 3; window++) {
+                        // Front windows
+                        const frontWindow = BABYLON.MeshBuilder.CreateBox(`frontWindow_${floor}_${window}`, {
+                            width: 4, height: 3, depth: 0.2
+                        }, this.scene);
+                        frontWindow.position.set(-120 + (window - 1) * 6, this.groundLevel + 5 + floor * 4.5, 65.1);
+                        
+                        // Side windows  
+                        const sideWindow = BABYLON.MeshBuilder.CreateBox(`sideWindow_${floor}_${window}`, {
+                            width: 0.2, height: 3, depth: 4
+                        }, this.scene);
+                        sideWindow.position.set(-105.1, this.groundLevel + 5 + floor * 4.5, 80 + (window - 1) * 6);
+                        
+                        // Window material - blue glass
+                        const windowMaterial = new BABYLON.StandardMaterial(`windowMat_${floor}_${window}`, this.scene);
+                        windowMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.4, 0.6);
+                        windowMaterial.alpha = 0.7;
+                        windowMaterial.emissiveColor = new BABYLON.Color3(0.1, 0.2, 0.3);
+                        
+                        frontWindow.material = windowMaterial;
+                        sideWindow.material = windowMaterial;
+                    }
+                }
+                
+                // HELICOPTER LANDING PAD on the roof
+                const helipad = BABYLON.MeshBuilder.CreateCylinder("skyscraperHelipad", {
+                    diameter: 25, height: 1
+                }, this.scene);
+                helipad.position.set(-120, this.groundLevel + 120.5, 80); // Top of building
+                
+                const helipadMaterial = new BABYLON.StandardMaterial("skyscraperHelipadMat", this.scene);
+                helipadMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2); // Dark gray
+                helipad.material = helipadMaterial;
+                
+                // Helipad markings - big H
+                const helipadH1 = BABYLON.MeshBuilder.CreateBox("helipadH1", {
+                    width: 3, height: 0.1, depth: 8
+                }, this.scene);
+                helipadH1.position.set(-120, this.groundLevel + 121, 80);
+                
+                const helipadH2 = BABYLON.MeshBuilder.CreateBox("helipadH2", {
+                    width: 8, height: 0.1, depth: 3
+                }, this.scene);
+                helipadH2.position.set(-120, this.groundLevel + 121, 80);
+                
+                const markingMaterial = new BABYLON.StandardMaterial("helipadMarkingMat", this.scene);
+                markingMaterial.diffuseColor = new BABYLON.Color3(1, 1, 0); // Yellow H marking
+                helipadH1.material = markingMaterial;
+                helipadH2.material = markingMaterial;
+                
+                // Skyscraper entrance
+                const skyscraperEntrance = BABYLON.MeshBuilder.CreateBox("skyscraperEntrance", {
+                    width: 12, height: 15, depth: 3
+                }, this.scene);
+                skyscraperEntrance.position.set(-120, this.groundLevel + 7.5, 65.5);
+                const skyscraperEntranceMaterial = new BABYLON.StandardMaterial("skyscraperEntranceMat", this.scene);
+                skyscraperEntranceMaterial.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1); // Dark entrance
+                skyscraperEntrance.material = skyscraperEntranceMaterial;
+                
+                // Store the helipad position for helicopter parking
+                this.skyscraperHelipad = {
+                    position: new BABYLON.Vector3(-120, this.groundLevel + 121, 80),
+                    mesh: helipad
+                };
+                
+                this.buildings.push({
+                    name: "Skyscraper",
+                    mesh: skyscraper,
+                    entrance: skyscraperEntrance,
+                    position: skyscraper.position.clone(),
+                    type: "office",
+                    helipad: this.skyscraperHelipad
+                });
+                
+                console.log('🏢 Skyscraper created with rooftop helipad!');
+            }
+            
+            createOfficeBuildings() {
+                // Create several office buildings of varying heights
+                const officeBuildings = [];
+                const officePositions = [
+                    { x: -150, z: 40, height: 45, name: "Office Tower A" },
+                    { x: -90, z: 40, height: 35, name: "Office Tower B" },
+                    { x: -150, z: 120, height: 55, name: "Office Tower C" },
+                    { x: -180, z: 80, height: 40, name: "Office Tower D" },
+                    { x: -60, z: 120, height: 30, name: "Office Tower E" }
+                ];
+                
+                officePositions.forEach((pos, index) => {
+                    // Main office building
+                    const office = BABYLON.MeshBuilder.CreateBox(`office_${index}`, {
+                        width: 25, height: pos.height, depth: 25
+                    }, this.scene);
+                    office.position.set(pos.x, this.groundLevel + pos.height/2, pos.z);
+                    
+                    const officeMaterial = new BABYLON.StandardMaterial(`officeMat_${index}`, this.scene);
+                    const grayVariation = 0.3 + Math.random() * 0.3; // Vary the gray color
+                    officeMaterial.diffuseColor = new BABYLON.Color3(grayVariation, grayVariation, grayVariation + 0.1);
+                    office.material = officeMaterial;
+                    
+                    // Add windows for realism
+                    const floors = Math.floor(pos.height / 4);
+                    for (let floor = 0; floor < floors; floor++) {
+                        for (let side = 0; side < 4; side++) {
+                            const window = BABYLON.MeshBuilder.CreateBox(`officeWindow_${index}_${floor}_${side}`, {
+                                width: side % 2 === 0 ? 15 : 0.2,
+                                height: 2.5,
+                                depth: side % 2 === 0 ? 0.2 : 15
+                            }, this.scene);
+                            
+                            let windowX = pos.x;
+                            let windowZ = pos.z;
+                            
+                            switch(side) {
+                                case 0: windowZ = pos.z + 12.6; break; // Front
+                                case 1: windowX = pos.x + 12.6; break; // Right
+                                case 2: windowZ = pos.z - 12.6; break; // Back
+                                case 3: windowX = pos.x - 12.6; break; // Left
+                            }
+                            
+                            window.position.set(windowX, this.groundLevel + 3 + floor * 4, windowZ);
+                            
+                            const windowMaterial = new BABYLON.StandardMaterial(`officeWindowMat_${index}_${floor}_${side}`, this.scene);
+                            // Randomly lit or dark windows
+                            if (Math.random() > 0.3) {
+                                windowMaterial.diffuseColor = new BABYLON.Color3(0.8, 0.9, 1); // Lit office
+                                windowMaterial.emissiveColor = new BABYLON.Color3(0.2, 0.3, 0.4);
+                            } else {
+                                windowMaterial.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.2); // Dark office
+                            }
+                            windowMaterial.alpha = 0.8;
+                            window.material = windowMaterial;
+                        }
+                    }
+                    
+                    // Office entrance
+                    const officeEntrance = BABYLON.MeshBuilder.CreateBox(`officeEntrance_${index}`, {
+                        width: 8, height: 8, depth: 2
+                    }, this.scene);
+                    officeEntrance.position.set(pos.x, this.groundLevel + 4, pos.z + 13.5);
+                    const officeEntranceMaterial = new BABYLON.StandardMaterial(`officeEntranceMat_${index}`, this.scene);
+                    officeEntranceMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+                    officeEntrance.material = officeEntranceMaterial;
+                    
+                    officeBuildings.push({
+                        name: pos.name,
+                        mesh: office,
+                        entrance: officeEntrance,
+                        position: office.position.clone(),
+                        type: "office",
+                        height: pos.height,
+                        windowCount: floors * 4 * 3 // For zombie spawning calculation
+                    });
+                    
+                    this.buildings.push({
+                        name: pos.name,
+                        mesh: office,
+                        entrance: officeEntrance,
+                        position: office.position.clone(),
+                        type: "office"
+                    });
+                });
+                
+                this.officeBuildings = officeBuildings;
+                console.log(`🏢 Created ${officeBuildings.length} office buildings with ${officeBuildings.reduce((sum, b) => sum + b.windowCount, 0)} windows`);
+            }
+            
             createStreets() {
                 // Main street running north-south
                 const street1 = BABYLON.MeshBuilder.CreateGround("street1", {
@@ -776,6 +1005,550 @@
                 };
             }
             
+            createHelicopter() {
+                // Initialize helicopter state
+                this.inHelicopter = false;
+                this.currentHelicopter = null;
+                this.helicopterSpeed = 0;
+                this.helicopterAltitude = 3; // Start at safe altitude above zombies
+                
+                const helicopterGroup = new BABYLON.TransformNode("helicopter", this.scene);
+                
+                // REALISTIC HELICOPTER FUSELAGE - more curved and detailed
+                const mainFuselage = BABYLON.MeshBuilder.CreateSphere("helicopterFuselage", {
+                    diameter: 4, segments: 16
+                }, this.scene);
+                mainFuselage.position.y = 1.8;
+                mainFuselage.scaling.set(1.8, 0.8, 2.5); // Elongated helicopter shape
+                mainFuselage.parent = helicopterGroup;
+                
+                // REALISTIC COCKPIT - curved glass canopy
+                const cockpit = BABYLON.MeshBuilder.CreateSphere("helicopterCockpit", {
+                    diameter: 3.5, segments: 20
+                }, this.scene);
+                cockpit.position.set(0, 2.2, -1.5);
+                cockpit.scaling.set(1.2, 0.9, 1.0); // Flattened cockpit glass
+                cockpit.parent = helicopterGroup;
+                
+                // ENGINE COMPARTMENT - above and behind cockpit
+                const engineCompartment = BABYLON.MeshBuilder.CreateBox("engineCompartment", {
+                    width: 3.5, height: 1.8, depth: 2.5
+                }, this.scene);
+                engineCompartment.position.set(0, 2.8, 1);
+                engineCompartment.parent = helicopterGroup;
+                
+                // REALISTIC TAIL BOOM - tapered and more detailed
+                const tailBoom = BABYLON.MeshBuilder.CreateCylinder("helicopterTail", {
+                    height: 12, diameterTop: 1.2, diameterBottom: 0.8, tessellation: 12
+                }, this.scene);
+                tailBoom.position.set(0, 2.2, 6.5);
+                tailBoom.rotation.z = Math.PI / 2;
+                tailBoom.parent = helicopterGroup;
+                
+                // TAIL FIN - vertical stabilizer
+                const tailFin = BABYLON.MeshBuilder.CreateBox("tailFin", {
+                    width: 0.2, height: 2.5, depth: 1.8
+                }, this.scene);
+                tailFin.position.set(0, 3.5, 12);
+                tailFin.parent = helicopterGroup;
+                
+                // MAIN ROTOR MAST - stronger and more detailed
+                const rotorMast = BABYLON.MeshBuilder.CreateCylinder("rotorMast", {
+                    height: 1.2, diameter: 0.25, tessellation: 16
+                }, this.scene);
+                rotorMast.position.y = 3.8;
+                rotorMast.parent = helicopterGroup;
+                
+                // MAIN ROTOR HUB - more detailed with realistic shape
+                const rotorHub = BABYLON.MeshBuilder.CreateCylinder("rotorHub", {
+                    height: 0.6, diameter: 0.8, tessellation: 16
+                }, this.scene);
+                rotorHub.position.y = 4.7;
+                rotorHub.parent = helicopterGroup;
+                
+                // Main rotor blades
+                const rotorBlades = [];
+                for (let i = 0; i < 4; i++) {
+                    const blade = BABYLON.MeshBuilder.CreateBox("rotorBlade", {
+                        width: 0.15, height: 0.05, depth: 12 // Longer, thinner realistic blades
+                    }, this.scene);
+                    blade.position.y = 4.75;
+                    blade.rotation.y = (i * Math.PI / 2);
+                    blade.parent = helicopterGroup;
+                    rotorBlades.push(blade);
+                }
+                
+                // Tail rotor
+                const tailRotor = BABYLON.MeshBuilder.CreateCylinder("tailRotor", {
+                    height: 0.2, diameter: 3
+                }, this.scene);
+                tailRotor.position.set(0, 2, 16);
+                tailRotor.rotation.x = Math.PI / 2;
+                tailRotor.parent = helicopterGroup;
+                
+                // Landing skids
+                const leftSkid = BABYLON.MeshBuilder.CreateBox("leftSkid", {
+                    width: 1, height: 0.3, depth: 10
+                }, this.scene);
+                leftSkid.position.set(-2.5, 0, 0);
+                leftSkid.parent = helicopterGroup;
+                
+                const rightSkid = BABYLON.MeshBuilder.CreateBox("rightSkid", {
+                    width: 1, height: 0.3, depth: 10
+                }, this.scene);
+                rightSkid.position.set(2.5, 0, 0);
+                rightSkid.parent = helicopterGroup;
+                
+                // Materials
+                const helicopterMaterial = new BABYLON.StandardMaterial("helicopterMat", this.scene);
+                helicopterMaterial.diffuseColor = new BABYLON.Color3(0.1, 0.3, 0.1); // Military green
+                
+                const glassMaterial = new BABYLON.StandardMaterial("helicopterGlass", this.scene);
+                glassMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.5, 0.8);
+                glassMaterial.alpha = 0.6; // Semi-transparent
+                
+                const rotorMaterial = new BABYLON.StandardMaterial("rotorMat", this.scene);
+                rotorMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2); // Dark gray
+                
+                // Apply materials
+                mainFuselage.material = helicopterMaterial;
+                engineCompartment.material = helicopterMaterial;
+                cockpit.material = glassMaterial;
+                tailBoom.material = helicopterMaterial;
+                tailFin.material = helicopterMaterial;
+                rotorMast.material = rotorMaterial;
+                rotorHub.material = rotorMaterial;
+                rotorBlades.forEach(blade => blade.material = rotorMaterial);
+                tailRotor.material = rotorMaterial;
+                leftSkid.material = helicopterMaterial;
+                rightSkid.material = helicopterMaterial;
+                
+                // Position helicopter on helipad closer to starting area, hovering safely above zombies
+                helicopterGroup.position.set(20, this.groundLevel + 8, -30);
+                helicopterGroup.rotation.y = Math.PI / 4; // Angled for dramatic effect
+                
+                // Create helipad
+                const helipad = BABYLON.MeshBuilder.CreateCylinder("helipad", {
+                    diameter: 20, height: 0.2
+                }, this.scene);
+                helipad.position.set(20, this.groundLevel + 0.1, -30);
+                const helipadMaterial = new BABYLON.StandardMaterial("helipadMat", this.scene);
+                helipadMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.3); // Dark gray
+                helipad.material = helipadMaterial;
+                
+                // Store helicopter data
+                this.helicopter = {
+                    group: helicopterGroup,
+                    body: mainFuselage,
+                    rotorBlades: rotorBlades,
+                    tailRotor: tailRotor,
+                    available: true,
+                    health: 150,
+                    maxHealth: 150,
+                    rotorSpeed: 0
+                };
+                
+                console.log('🚁 Helicopter created on helipad!');
+            }
+            
+            createStreetLights() {
+                console.log('Creating street lights...');
+                
+                const streetLights = [];
+                // Position street lights along roadside - not in the middle of roads
+                const lightPositions = [
+                    { x: -35, z: -25 },  // Road side positions
+                    { x: 35, z: -25 },
+                    { x: -25, z: 35 },
+                    { x: 25, z: 35 },
+                    { x: -8, z: -45 },   // Offset from road center
+                    { x: 8, z: 45 },
+                    { x: -55, z: -8 },   // Side positions
+                    { x: 55, z: 8 },
+                    { x: -75, z: -75 },  // Corner positions
+                    { x: 75, z: 75 },
+                    { x: -45, z: 15 },   // Additional roadside lights
+                    { x: 45, z: -15 },
+                    { x: 15, z: -35 },
+                    { x: -15, z: 35 }
+                ];
+                
+                lightPositions.forEach((pos, index) => {
+                    // Street light pole
+                    const pole = BABYLON.MeshBuilder.CreateCylinder(`streetPole_${index}`, {
+                        height: 12, diameter: 0.3, tessellation: 12
+                    }, this.scene);
+                    pole.position.set(pos.x, this.groundLevel + 6, pos.z);
+                    
+                    // Light fixture
+                    const fixture = BABYLON.MeshBuilder.CreateSphere(`lightFixture_${index}`, {
+                        diameter: 1.5, segments: 16
+                    }, this.scene);
+                    fixture.position.set(pos.x, this.groundLevel + 11, pos.z);
+                    
+                    // Light arm connecting pole to fixture
+                    const arm = BABYLON.MeshBuilder.CreateBox(`lightArm_${index}`, {
+                        width: 2, height: 0.2, depth: 0.2
+                    }, this.scene);
+                    arm.position.set(pos.x + 1, this.groundLevel + 10.5, pos.z);
+                    
+                    // Materials
+                    const poleMaterial = new BABYLON.StandardMaterial(`poleMat_${index}`, this.scene);
+                    poleMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2); // Dark gray metal
+                    
+                    const lightMaterial = new BABYLON.StandardMaterial(`lightMat_${index}`, this.scene);
+                    lightMaterial.diffuseColor = new BABYLON.Color3(0.9, 0.9, 0.7);
+                    lightMaterial.emissiveColor = new BABYLON.Color3(0.3, 0.3, 0.2); // Dim glow
+                    
+                    pole.material = poleMaterial;
+                    arm.material = poleMaterial;
+                    fixture.material = lightMaterial;
+                    
+                    // Add actual light source
+                    const streetLight = new BABYLON.DirectionalLight(`streetLight_${index}`, 
+                        new BABYLON.Vector3(0, -1, 0), this.scene);
+                    streetLight.position.set(pos.x, this.groundLevel + 11, pos.z);
+                    streetLight.diffuse = new BABYLON.Color3(0.6, 0.6, 0.4);
+                    streetLight.intensity = 0.3; // Dim apocalyptic lighting
+                    streetLight.range = 25;
+                    
+                    streetLights.push({ pole, fixture, arm, light: streetLight });
+                });
+                
+                this.streetLights = streetLights;
+                console.log(`✨ Created ${streetLights.length} street lights`);
+            }
+            
+            createGasCans() {
+                console.log('Creating gas cans...');
+                
+                const gasCans = [];
+                const gasCanPositions = [
+                    { x: -15, z: 25 },
+                    { x: 45, z: -15 },
+                    { x: -35, z: -40 },
+                    { x: 25, z: 35 },
+                    { x: -50, z: 10 },
+                    { x: 70, z: -25 },
+                    { x: 10, z: -65 },
+                    { x: -25, z: 55 },
+                    { x: 35, z: -5 },
+                    { x: -60, z: -20 },
+                    { x: 15, z: 45 },
+                    { x: -40, z: -55 }
+                ];
+                
+                gasCanPositions.forEach((pos, index) => {
+                    // Gas can body
+                    const canBody = BABYLON.MeshBuilder.CreateBox(`gasCan_${index}`, {
+                        width: 1.2, height: 1.8, depth: 0.8
+                    }, this.scene);
+                    canBody.position.set(pos.x, this.groundLevel + 0.9, pos.z);
+                    
+                    // Gas can spout
+                    const spout = BABYLON.MeshBuilder.CreateCylinder(`gasSpout_${index}`, {
+                        height: 0.6, diameter: 0.15, tessellation: 8
+                    }, this.scene);
+                    spout.position.set(pos.x + 0.4, this.groundLevel + 1.5, pos.z + 0.2);
+                    spout.rotation.z = Math.PI / 6; // Tilted spout
+                    
+                    // Handle
+                    const handle = BABYLON.MeshBuilder.CreateTorus(`gasHandle_${index}`, {
+                        diameter: 0.8, thickness: 0.1
+                    }, this.scene);
+                    handle.position.set(pos.x - 0.5, this.groundLevel + 1.3, pos.z);
+                    handle.rotation.z = Math.PI / 2;
+                    
+                    // Materials
+                    const gasMaterial = new BABYLON.StandardMaterial(`gasMat_${index}`, this.scene);
+                    gasMaterial.diffuseColor = new BABYLON.Color3(0.8, 0.1, 0.1); // Red gas can
+                    gasMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                    
+                    const metalMaterial = new BABYLON.StandardMaterial(`metalMat_${index}`, this.scene);
+                    metalMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+                    metalMaterial.specularColor = new BABYLON.Color3(0.6, 0.6, 0.6);
+                    
+                    canBody.material = gasMaterial;
+                    spout.material = metalMaterial;
+                    handle.material = metalMaterial;
+                    
+                    // Random rotation for variety
+                    const randomRotation = Math.random() * Math.PI * 2;
+                    canBody.rotation.y = randomRotation;
+                    
+                    gasCans.push({ body: canBody, spout, handle });
+                });
+                
+                this.gasCans = gasCans;
+                console.log(`⛽ Created ${gasCans.length} gas cans`);
+            }
+            
+            createDeadBodies() {
+                console.log('Creating dead bodies...');
+                
+                const deadBodies = [];
+                const bodyPositions = [
+                    { x: -20, z: 15, rotation: 0 },
+                    { x: 40, z: -30, rotation: Math.PI / 3 },
+                    { x: -45, z: -25, rotation: Math.PI },
+                    { x: 30, z: 40, rotation: Math.PI / 2 },
+                    { x: -30, z: 45, rotation: Math.PI / 4 },
+                    { x: 50, z: 20, rotation: Math.PI * 1.5 },
+                    { x: -10, z: -45, rotation: Math.PI / 6 },
+                    { x: 65, z: -10, rotation: Math.PI * 0.8 }
+                ];
+                
+                bodyPositions.forEach((pos, index) => {
+                    // Create a flattened body lying on ground
+                    const bodyTorso = BABYLON.MeshBuilder.CreateBox(`deadBody_${index}`, {
+                        width: 1.5, height: 0.3, depth: 2.2
+                    }, this.scene);
+                    bodyTorso.position.set(pos.x, this.groundLevel + 0.15, pos.z);
+                    bodyTorso.rotation.y = pos.rotation;
+                    
+                    // Head
+                    const head = BABYLON.MeshBuilder.CreateSphere(`deadHead_${index}`, {
+                        diameter: 0.6, segments: 12
+                    }, this.scene);
+                    head.position.set(
+                        pos.x + Math.cos(pos.rotation) * 1.2,
+                        this.groundLevel + 0.3,
+                        pos.z + Math.sin(pos.rotation) * 1.2
+                    );
+                    head.scaling.y = 0.5; // Flattened
+                    
+                    // Arms
+                    const leftArm = BABYLON.MeshBuilder.CreateBox(`deadLeftArm_${index}`, {
+                        width: 0.25, height: 0.2, depth: 1.0
+                    }, this.scene);
+                    leftArm.position.set(
+                        pos.x + Math.cos(pos.rotation + Math.PI/2) * 0.8,
+                        this.groundLevel + 0.1,
+                        pos.z + Math.sin(pos.rotation + Math.PI/2) * 0.8
+                    );
+                    leftArm.rotation.y = pos.rotation + Math.PI/4;
+                    
+                    const rightArm = BABYLON.MeshBuilder.CreateBox(`deadRightArm_${index}`, {
+                        width: 0.25, height: 0.2, depth: 1.0
+                    }, this.scene);
+                    rightArm.position.set(
+                        pos.x + Math.cos(pos.rotation - Math.PI/2) * 0.9,
+                        this.groundLevel + 0.1,
+                        pos.z + Math.sin(pos.rotation - Math.PI/2) * 0.9
+                    );
+                    rightArm.rotation.y = pos.rotation - Math.PI/6;
+                    
+                    // Legs
+                    const leftLeg = BABYLON.MeshBuilder.CreateBox(`deadLeftLeg_${index}`, {
+                        width: 0.3, height: 0.25, depth: 1.3
+                    }, this.scene);
+                    leftLeg.position.set(
+                        pos.x + Math.cos(pos.rotation) * -0.8 + Math.cos(pos.rotation + Math.PI/2) * 0.3,
+                        this.groundLevel + 0.12,
+                        pos.z + Math.sin(pos.rotation) * -0.8 + Math.sin(pos.rotation + Math.PI/2) * 0.3
+                    );
+                    leftLeg.rotation.y = pos.rotation;
+                    
+                    const rightLeg = BABYLON.MeshBuilder.CreateBox(`deadRightLeg_${index}`, {
+                        width: 0.3, height: 0.25, depth: 1.3
+                    }, this.scene);
+                    rightLeg.position.set(
+                        pos.x + Math.cos(pos.rotation) * -0.8 + Math.cos(pos.rotation - Math.PI/2) * 0.3,
+                        this.groundLevel + 0.12,
+                        pos.z + Math.sin(pos.rotation) * -0.8 + Math.sin(pos.rotation - Math.PI/2) * 0.3
+                    );
+                    rightLeg.rotation.y = pos.rotation;
+                    
+                    // Dead body materials
+                    const deadFleshMaterial = new BABYLON.StandardMaterial(`deadFlesh_${index}`, this.scene);
+                    deadFleshMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.4, 0.3); // Pale, dead flesh
+                    deadFleshMaterial.emissiveColor = new BABYLON.Color3(0.05, 0.02, 0.02);
+                    
+                    const deadClothingMaterial = new BABYLON.StandardMaterial(`deadClothing_${index}`, this.scene);
+                    deadClothingMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.2, 0.15); // Dark, bloodstained clothes
+                    deadClothingMaterial.emissiveColor = new BABYLON.Color3(0.02, 0.01, 0.01);
+                    
+                    // Apply materials
+                    head.material = deadFleshMaterial;
+                    leftArm.material = deadFleshMaterial;
+                    rightArm.material = deadFleshMaterial;
+                    bodyTorso.material = deadClothingMaterial;
+                    leftLeg.material = deadClothingMaterial;
+                    rightLeg.material = deadClothingMaterial;
+                    
+                    deadBodies.push({
+                        torso: bodyTorso,
+                        head: head,
+                        leftArm: leftArm,
+                        rightArm: rightArm,
+                        leftLeg: leftLeg,
+                        rightLeg: rightLeg
+                    });
+                });
+                
+                this.deadBodies = deadBodies;
+                console.log(`💀 Created ${deadBodies.length} dead bodies`);
+            }
+            
+            createRivers() {
+                console.log('🌊 Creating rivers around city boundaries...');
+                
+                const rivers = [];
+                
+                // NORTH RIVER - horizontal across top of city
+                const northRiver = BABYLON.MeshBuilder.CreateGround("northRiver", {
+                    width: 600, height: 40
+                }, this.scene);
+                northRiver.position.set(0, this.groundLevel - 0.5, -280); // Slightly below ground
+                
+                // SOUTH RIVER - horizontal across bottom of city  
+                const southRiver = BABYLON.MeshBuilder.CreateGround("southRiver", {
+                    width: 600, height: 40
+                }, this.scene);
+                southRiver.position.set(0, this.groundLevel - 0.5, 280);
+                
+                // EAST RIVER - vertical along right side of city
+                const eastRiver = BABYLON.MeshBuilder.CreateGround("eastRiver", {
+                    width: 40, height: 560
+                }, this.scene);
+                eastRiver.position.set(280, this.groundLevel - 0.5, 0);
+                
+                // WEST RIVER - vertical along left side of city
+                const westRiver = BABYLON.MeshBuilder.CreateGround("westRiver", {
+                    width: 40, height: 560
+                }, this.scene);
+                westRiver.position.set(-280, this.groundLevel - 0.5, 0);
+                
+                // RIVER MATERIAL - realistic water appearance
+                const riverMaterial = new BABYLON.StandardMaterial("riverMat", this.scene);
+                riverMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.4, 0.7); // Blue water
+                riverMaterial.specularColor = new BABYLON.Color3(0.8, 0.8, 1.0); // Shiny water surface
+                riverMaterial.emissiveColor = new BABYLON.Color3(0.1, 0.2, 0.3); // Slight glow
+                riverMaterial.alpha = 0.8; // Semi-transparent
+                
+                // Apply water material to all rivers
+                northRiver.material = riverMaterial;
+                southRiver.material = riverMaterial;
+                eastRiver.material = riverMaterial;
+                westRiver.material = riverMaterial;
+                
+                // Add some water flow animation by creating waves
+                let waveTime = 0;
+                const animateWater = () => {
+                    waveTime += 0.02;
+                    
+                    // Create subtle wave effect by modifying material properties
+                    riverMaterial.emissiveColor = new BABYLON.Color3(
+                        0.1 + Math.sin(waveTime) * 0.05,
+                        0.2 + Math.sin(waveTime * 1.2) * 0.05,
+                        0.3 + Math.cos(waveTime * 0.8) * 0.05
+                    );
+                    
+                    requestAnimationFrame(animateWater);
+                };
+                animateWater();
+                
+                // Add BRIDGES to cross the rivers at key points
+                this.createBridges();
+                
+                // Store river data for collision detection
+                this.rivers = [
+                    { mesh: northRiver, bounds: { x: 0, z: -280, width: 600, depth: 40 } },
+                    { mesh: southRiver, bounds: { x: 0, z: 280, width: 600, depth: 40 } },
+                    { mesh: eastRiver, bounds: { x: 280, z: 0, width: 40, depth: 560 } },
+                    { mesh: westRiver, bounds: { x: -280, z: 0, width: 40, depth: 560 } }
+                ];
+                
+                rivers.push(northRiver, southRiver, eastRiver, westRiver);
+                
+                console.log(`🌊 Created ${rivers.length} boundary rivers with flowing water`);
+            }
+            
+            createBridges() {
+                console.log('🌉 Creating bridges across rivers...');
+                
+                const bridges = [];
+                
+                // MAIN ROAD BRIDGES - where streets cross rivers
+                // North bridge (main street crosses north river)
+                const northBridge = BABYLON.MeshBuilder.CreateBox("northBridge", {
+                    width: 20, height: 1, depth: 50
+                }, this.scene);
+                northBridge.position.set(0, this.groundLevel + 0.2, -280);
+                
+                // South bridge (main street crosses south river)
+                const southBridge = BABYLON.MeshBuilder.CreateBox("southBridge", {
+                    width: 20, height: 1, depth: 50
+                }, this.scene);
+                southBridge.position.set(0, this.groundLevel + 0.2, 280);
+                
+                // East bridge (cross street crosses east river)
+                const eastBridge = BABYLON.MeshBuilder.CreateBox("eastBridge", {
+                    width: 50, height: 1, depth: 20
+                }, this.scene);
+                eastBridge.position.set(280, this.groundLevel + 0.2, 0);
+                
+                // West bridge (cross street crosses west river)
+                const westBridge = BABYLON.MeshBuilder.CreateBox("westBridge", {
+                    width: 50, height: 1, depth: 20
+                }, this.scene);
+                westBridge.position.set(-280, this.groundLevel + 0.2, 0);
+                
+                // BRIDGE MATERIAL - concrete/stone appearance
+                const bridgeMaterial = new BABYLON.StandardMaterial("bridgeMat", this.scene);
+                bridgeMaterial.diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.6); // Gray concrete
+                bridgeMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                
+                // Apply bridge material
+                northBridge.material = bridgeMaterial;
+                southBridge.material = bridgeMaterial;
+                eastBridge.material = bridgeMaterial;
+                westBridge.material = bridgeMaterial;
+                
+                // Add bridge railings for realism
+                const createRailing = (bridgePos, isHorizontal) => {
+                    const railingHeight = 0.8;
+                    const railingWidth = isHorizontal ? 50 : 20;
+                    const railingDepth = isHorizontal ? 20 : 50;
+                    
+                    // Left railing
+                    const leftRailing = BABYLON.MeshBuilder.CreateBox("leftRailing", {
+                        width: isHorizontal ? 2 : railingWidth,
+                        height: railingHeight,
+                        depth: isHorizontal ? railingDepth : 2
+                    }, this.scene);
+                    leftRailing.position.set(
+                        bridgePos.x + (isHorizontal ? -12 : 0),
+                        this.groundLevel + 1,
+                        bridgePos.z + (isHorizontal ? 0 : -12)
+                    );
+                    leftRailing.material = bridgeMaterial;
+                    
+                    // Right railing
+                    const rightRailing = BABYLON.MeshBuilder.CreateBox("rightRailing", {
+                        width: isHorizontal ? 2 : railingWidth,
+                        height: railingHeight,
+                        depth: isHorizontal ? railingDepth : 2
+                    }, this.scene);
+                    rightRailing.position.set(
+                        bridgePos.x + (isHorizontal ? 12 : 0),
+                        this.groundLevel + 1,
+                        bridgePos.z + (isHorizontal ? 0 : 12)
+                    );
+                    rightRailing.material = bridgeMaterial;
+                };
+                
+                // Add railings to all bridges
+                createRailing({ x: 0, z: -280 }, true);   // North bridge
+                createRailing({ x: 0, z: 280 }, true);    // South bridge  
+                createRailing({ x: 280, z: 0 }, false);   // East bridge
+                createRailing({ x: -280, z: 0 }, false);  // West bridge
+                
+                bridges.push(northBridge, southBridge, eastBridge, westBridge);
+                
+                console.log(`🌉 Created ${bridges.length} bridges with railings`);
+            }
+            
             setupSimpleControls() {
                 console.log("Setting up SIMPLE controls...");
                 
@@ -785,6 +1558,9 @@
                 
                 // SIMPLE SHOOT BUTTON
                 this.setupSimpleShoot();
+                
+                // HELICOPTER ALTITUDE CONTROLS
+                this.setupAltitudeControls();
                 
                 // DESKTOP KEYBOARD CONTROLS
                 this.setupKeyboardControls();
@@ -874,27 +1650,52 @@
                     
                     // Check for interactions with longer hold
                     interactionTimer = setTimeout(() => {
+                        // Exit helicopter if in helicopter
+                        if (this.inHelicopter) {
+                            this.exitHelicopter();
+                            return;
+                        }
+                        
+                        // Exit car if in car
+                        if (this.inCar) {
+                            this.exitCar();
+                            return;
+                        }
+                        
                         // Exit building if inside
                         if (this.insideBuilding) {
                             this.exitBuilding();
                             return;
                         }
                         
-                        // Enter building if near one
-                        if (this.nearBuilding) {
-                            this.enterBuilding(this.nearBuilding);
-                            return;
+                        // Enter helicopter if near one
+                        if (this.helicopter && this.helicopter.available && !this.inCar && !this.inHelicopter) {
+                            const helicopterDistance = BABYLON.Vector3.Distance(this.camera.position, this.helicopter.group.position);
+                            if (helicopterDistance < 10) {
+                                this.enterHelicopter();
+                                return;
+                            }
                         }
                         
-                        // Car interactions
+                        // Enter car if near one
                         const nearCar = this.cars.find(car => car.nearPlayer && car.available);
-                        if (nearCar && !this.inCar) {
+                        if (nearCar && !this.inCar && !this.inHelicopter) {
                             this.enterCar(nearCar);
                             return;
                         }
                         
-                        if (this.inCar) {
-                            this.exitCar();
+                        // Land helicopter on skyscraper helipad if near
+                        if (this.inHelicopter && this.skyscraperHelipad) {
+                            const helipadDistance = BABYLON.Vector3.Distance(this.camera.position, this.skyscraperHelipad.position);
+                            if (helipadDistance < 20) {
+                                this.landHelicopterOnSkyscraper();
+                                return;
+                            }
+                        }
+                        
+                        // Enter building if near one
+                        if (this.nearBuilding) {
+                            this.enterBuilding(this.nearBuilding);
                             return;
                         }
                     }, 1000);
@@ -1106,6 +1907,85 @@
                 this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, targetRotationX));
             }
             
+            setupAltitudeControls() {
+                const altitudeControls = document.getElementById('altitudeControls');
+                const altitudeUpButton = document.getElementById('altitudeUpButton');
+                const altitudeDownButton = document.getElementById('altitudeDownButton');
+                
+                // Altitude Up Button
+                let isAscending = false;
+                
+                const startAscending = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (this.inHelicopter) {
+                        isAscending = true;
+                        console.log('🚁 Ascending...');
+                    }
+                };
+                
+                const stopAscending = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isAscending = false;
+                };
+                
+                // Altitude Down Button
+                let isDescending = false;
+                
+                const startDescending = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (this.inHelicopter) {
+                        isDescending = true;
+                        console.log('🚁 Descending...');
+                    }
+                };
+                
+                const stopDescending = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isDescending = false;
+                };
+                
+                // Add event listeners for up button
+                altitudeUpButton.addEventListener('touchstart', startAscending, { passive: false });
+                altitudeUpButton.addEventListener('touchend', stopAscending, { passive: false });
+                altitudeUpButton.addEventListener('mousedown', startAscending);
+                altitudeUpButton.addEventListener('mouseup', stopAscending);
+                
+                // Add event listeners for down button
+                altitudeDownButton.addEventListener('touchstart', startDescending, { passive: false });
+                altitudeDownButton.addEventListener('touchend', stopDescending, { passive: false });
+                altitudeDownButton.addEventListener('mousedown', startDescending);
+                altitudeDownButton.addEventListener('mouseup', stopDescending);
+                
+                // Continuous altitude adjustment
+                const updateAltitude = () => {
+                    if (this.inHelicopter) {
+                        if (isAscending) {
+                            this.helicopterAltitude += 1.2; // Faster than keyboard
+                            this.helicopterAltitude = Math.min(this.helicopterAltitude, 100);
+                        }
+                        if (isDescending) {
+                            this.helicopterAltitude -= 1.2; // Faster than keyboard  
+                            this.helicopterAltitude = Math.max(this.helicopterAltitude, 1); // Minimum 1 unit above ground for landing
+                        }
+                        
+                        // Show/hide altitude controls based on helicopter state
+                        altitudeControls.style.display = 'flex';
+                    } else {
+                        altitudeControls.style.display = 'none';
+                    }
+                    
+                    requestAnimationFrame(updateAltitude);
+                };
+                
+                updateAltitude(); // Start the update loop
+                
+                console.log('🚁 Mobile altitude controls setup complete');
+            }
+            
             setupKeyboardControls() {
                 // Only enable keyboard controls on desktop/non-mobile devices
                 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -1114,13 +1994,13 @@
                     return;
                 }
                 
-                const keyState = {};
+                this.keyState = {};
                 
                 document.addEventListener('keydown', (e) => {
-                    keyState[e.code] = true;
+                    this.keyState[e.code] = true;
                     
-                    // Shooting
-                    if (e.code === 'Space') {
+                    // Shooting (not in helicopter mode - Space is altitude control there)
+                    if (e.code === 'Space' && !this.inHelicopter) {
                         e.preventDefault();
                         this.shoot();
                     }
@@ -1137,9 +2017,18 @@
                         
                         // Enter car if near one
                         const nearCar = this.cars.find(car => car.nearPlayer && car.available);
-                        if (nearCar && !this.inCar) {
+                        if (nearCar && !this.inCar && !this.inHelicopter) {
                             this.enterCar(nearCar);
                             return;
+                        }
+                        
+                        // Enter helicopter if near one
+                        if (this.helicopter && this.helicopter.available && !this.inCar && !this.inHelicopter) {
+                            const helicopterDistance = BABYLON.Vector3.Distance(this.camera.position, this.helicopter.group.position);
+                            if (helicopterDistance < 10) {
+                                this.enterHelicopter();
+                                return;
+                            }
                         }
                     }
                     
@@ -1159,15 +2048,33 @@
                             return;
                         }
                         
+                        // Exit helicopter if in helicopter
+                        if (this.inHelicopter) {
+                            this.exitHelicopter();
+                            return;
+                        }
+                        
                         // Show message if in building but not near door
                         if (this.insideBuilding && !this.nearDoor) {
                             this.showInteractionPrompt('🚪 Find the exit door to leave the building!');
                         }
                     }
+                    
+                    // L key - Land helicopter on skyscraper helipad
+                    if (e.code === 'KeyL') {
+                        e.preventDefault();
+                        if (this.inHelicopter && this.skyscraperHelipad) {
+                            const helipadDistance = BABYLON.Vector3.Distance(this.camera.position, this.skyscraperHelipad.position);
+                            if (helipadDistance < 20) {
+                                this.landHelicopterOnSkyscraper();
+                                return;
+                            }
+                        }
+                    }
                 });
                 
                 document.addEventListener('keyup', (e) => {
-                    keyState[e.code] = false;
+                    this.keyState[e.code] = false;
                 });
                 
                 // Update movement based on keys
@@ -1175,10 +2082,26 @@
                     let x = 0, z = 0;
                     
                     // WASD movement - fix directions
-                    if (keyState['KeyW'] || keyState['ArrowUp']) z = 1;
-                    if (keyState['KeyS'] || keyState['ArrowDown']) z = -1;
-                    if (keyState['KeyA'] || keyState['ArrowLeft']) x = -1;  // A = left
-                    if (keyState['KeyD'] || keyState['ArrowRight']) x = 1;   // D = right
+                    if (this.keyState['KeyW']) z = 1;  // W = forward
+                    if (this.keyState['KeyS']) z = -1; // S = backward
+                    if (this.keyState['KeyA'] || this.keyState['ArrowLeft']) x = -1;  // A = left
+                    if (this.keyState['KeyD'] || this.keyState['ArrowRight']) x = 1;   // D = right
+                    
+                    // Arrow Up/Down for helicopter altitude control (when in helicopter)
+                    if (this.inHelicopter) {
+                        if (this.keyState['ArrowUp']) {
+                            this.helicopterAltitude += 0.8;
+                            this.helicopterAltitude = Math.min(this.helicopterAltitude, 100);
+                        }
+                        if (this.keyState['ArrowDown']) {
+                            this.helicopterAltitude -= 0.8;
+                            this.helicopterAltitude = Math.max(this.helicopterAltitude, 1); // Minimum 1 unit above ground for landing
+                        }
+                    } else {
+                        // For walking, arrow keys can also move (optional)
+                        if (this.keyState['ArrowUp']) z = 1;
+                        if (this.keyState['ArrowDown']) z = -1;
+                    }
                     
                     // Update move vector for keyboard
                     this.moveVector = { x: x, z: z };
@@ -1226,144 +2149,353 @@
             createRealisticZombie(zombieType = 'normal') {
                 const zombieGroup = new BABYLON.TransformNode(`${zombieType}Zombie`, this.scene);
                 
-                // More realistic proportions and shapes
-                const torso = BABYLON.MeshBuilder.CreateBox("zombieTorso", {
-                    width: 1.6, height: 3.2, depth: 0.8
-                }, this.scene);
-                torso.position.y = 1.6;
-                torso.parent = zombieGroup;
-                
-                // More human-like head with facial features
+                // REALISTIC HUMAN HEAD - exactly like your image
                 const head = BABYLON.MeshBuilder.CreateSphere("zombieHead", {
-                    diameter: 1.2, segments: 16
+                    diameter: 0.6, segments: 24
                 }, this.scene);
                 head.position.y = 3.8;
-                head.scaling.set(0.95, 1.1, 0.9); // Slightly elongated
+                head.scaling.set(0.85, 1.0, 0.9); // Human head proportions
                 head.parent = zombieGroup;
                 
-                // Add eyes for more realism
-                const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", {diameter: 0.15}, this.scene);
-                leftEye.position.set(-0.25, 0.15, -0.4);
+                // NECK
+                const neck = BABYLON.MeshBuilder.CreateCylinder("zombieNeck", {
+                    height: 0.3, diameter: 0.25, tessellation: 12
+                }, this.scene);
+                neck.position.y = 3.45;
+                neck.parent = zombieGroup;
+                
+                // SHIRT/TORSO - like the torn shirt in your image
+                const torso = BABYLON.MeshBuilder.CreateBox("zombieTorso", {
+                    width: 1.1, height: 2.2, depth: 0.5
+                }, this.scene);
+                torso.position.y = 2.5;
+                torso.parent = zombieGroup;
+                
+                // BELT AREA
+                const belt = BABYLON.MeshBuilder.CreateBox("zombieBelt", {
+                    width: 1.15, height: 0.15, depth: 0.52
+                }, this.scene);
+                belt.position.y = 1.35;
+                belt.parent = zombieGroup;
+                
+                // REALISTIC HUMAN EYES
+                const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", {diameter: 0.08}, this.scene);
+                leftEye.position.set(-0.12, 0.08, -0.28);
                 leftEye.parent = head;
                 
-                const rightEye = BABYLON.MeshBuilder.CreateSphere("rightEye", {diameter: 0.15}, this.scene);
-                rightEye.position.set(0.25, 0.15, -0.4);
+                const rightEye = BABYLON.MeshBuilder.CreateSphere("rightEye", {diameter: 0.08}, this.scene);
+                rightEye.position.set(0.12, 0.08, -0.28);
                 rightEye.parent = head;
                 
-                // More realistic arms with elbows
+                // BUILDING-SPECIFIC ACCESSORIES for different zombie types
+                let accessory = null;
+                switch(zombieType) {
+                    case 'police':
+                        // Police badge on chest
+                        const badge = BABYLON.MeshBuilder.CreateBox("policeBadge", {
+                            width: 0.3, height: 0.2, depth: 0.05
+                        }, this.scene);
+                        badge.position.set(-0.2, 0.3, -0.27);
+                        badge.parent = torso;
+                        accessory = badge;
+                        break;
+                        
+                    case 'hospital':
+                        // Stethoscope around neck
+                        const stethoscope = BABYLON.MeshBuilder.CreateTorus("stethoscope", {
+                            diameter: 0.8, thickness: 0.05
+                        }, this.scene);
+                        stethoscope.position.set(0, -0.1, 0);
+                        stethoscope.rotation.x = Math.PI / 2;
+                        stethoscope.parent = neck;
+                        accessory = stethoscope;
+                        break;
+                        
+                    case 'school':
+                        // School ID badge or backpack straps
+                        const schoolID = BABYLON.MeshBuilder.CreateBox("schoolID", {
+                            width: 0.15, height: 0.25, depth: 0.02
+                        }, this.scene);
+                        schoolID.position.set(0.3, 0.2, -0.27);
+                        schoolID.parent = torso;
+                        accessory = schoolID;
+                        break;
+                        
+                    case 'gas':
+                        // Tool belt or name tag
+                        const toolBelt = BABYLON.MeshBuilder.CreateBox("toolBelt", {
+                            width: 1.3, height: 0.1, depth: 0.2
+                        }, this.scene);
+                        toolBelt.position.set(0, -0.1, 0.1);
+                        toolBelt.parent = belt;
+                        accessory = toolBelt;
+                        break;
+                        
+                    case 'mall':
+                        // Shopping bag or purse
+                        const shoppingBag = BABYLON.MeshBuilder.CreateBox("shoppingBag", {
+                            width: 0.4, height: 0.6, depth: 0.3
+                        }, this.scene);
+                        shoppingBag.position.set(0.1, -0.3, 0.2);
+                        shoppingBag.parent = rightHand;
+                        accessory = shoppingBag;
+                        break;
+                        
+                    case 'office':
+                        // Business briefcase
+                        const briefcase = BABYLON.MeshBuilder.CreateBox("briefcase", {
+                            width: 0.6, height: 0.4, depth: 0.2
+                        }, this.scene);
+                        briefcase.position.set(0.2, -0.2, 0.1);
+                        briefcase.parent = rightHand;
+                        accessory = briefcase;
+                        break;
+                }
+                
+                // REALISTIC HUMAN ARMS - exactly like your image zombie
+                const leftShoulder = BABYLON.MeshBuilder.CreateSphere("leftShoulder", {diameter: 0.35}, this.scene);
+                leftShoulder.position.set(-0.7, 3.4, 0);
+                leftShoulder.parent = zombieGroup;
+                
                 const leftUpperArm = BABYLON.MeshBuilder.CreateCylinder("leftUpperArm", {
-                    height: 1.2, diameter: 0.4, tessellation: 8
+                    height: 1.0, diameter: 0.2, tessellation: 16
                 }, this.scene);
-                leftUpperArm.position.set(-1.1, 2.8, 0);
-                leftUpperArm.rotation.set(0.3, 0, 0.2);
+                leftUpperArm.position.set(-0.9, 2.7, 0.05);
+                leftUpperArm.rotation.set(0.15, 0, 0.25);
                 leftUpperArm.parent = zombieGroup;
                 
+                const leftElbow = BABYLON.MeshBuilder.CreateSphere("leftElbow", {diameter: 0.18}, this.scene);
+                leftElbow.position.set(-1.1, 2.2, 0.1);
+                leftElbow.parent = zombieGroup;
+                
                 const leftForearm = BABYLON.MeshBuilder.CreateCylinder("leftForearm", {
-                    height: 1.1, diameter: 0.35, tessellation: 8
+                    height: 0.9, diameter: 0.18, tessellation: 16
                 }, this.scene);
-                leftForearm.position.set(-1.4, 1.5, 0.3);
-                leftForearm.rotation.set(0.5, 0, 0.6);
+                leftForearm.position.set(-1.3, 1.6, 0.3);
+                leftForearm.rotation.set(0.5, 0, 0.7);
                 leftForearm.parent = zombieGroup;
                 
+                const leftHand = BABYLON.MeshBuilder.CreateSphere("leftHand", {diameter: 0.16}, this.scene);
+                leftHand.position.set(-1.5, 1.1, 0.5);
+                leftHand.parent = zombieGroup;
+                
+                const rightShoulder = BABYLON.MeshBuilder.CreateSphere("rightShoulder", {diameter: 0.35}, this.scene);
+                rightShoulder.position.set(0.7, 3.4, 0);
+                rightShoulder.parent = zombieGroup;
+                
                 const rightUpperArm = BABYLON.MeshBuilder.CreateCylinder("rightUpperArm", {
-                    height: 1.2, diameter: 0.4, tessellation: 8
+                    height: 1.0, diameter: 0.2, tessellation: 16
                 }, this.scene);
-                rightUpperArm.position.set(1.1, 2.8, 0);
-                rightUpperArm.rotation.set(0.3, 0, -0.2);
+                rightUpperArm.position.set(0.9, 2.7, 0.05);
+                rightUpperArm.rotation.set(0.15, 0, -0.25);
                 rightUpperArm.parent = zombieGroup;
                 
+                const rightElbow = BABYLON.MeshBuilder.CreateSphere("rightElbow", {diameter: 0.18}, this.scene);
+                rightElbow.position.set(1.1, 2.2, 0.1);
+                rightElbow.parent = zombieGroup;
+                
                 const rightForearm = BABYLON.MeshBuilder.CreateCylinder("rightForearm", {
-                    height: 1.1, diameter: 0.35, tessellation: 8
+                    height: 0.9, diameter: 0.18, tessellation: 16
                 }, this.scene);
-                rightForearm.position.set(1.4, 1.5, 0.3);
-                rightForearm.rotation.set(0.5, 0, -0.6);
+                rightForearm.position.set(1.3, 1.6, 0.3);
+                rightForearm.rotation.set(0.5, 0, -0.7);
                 rightForearm.parent = zombieGroup;
                 
-                // More realistic legs with knees
+                const rightHand = BABYLON.MeshBuilder.CreateSphere("rightHand", {diameter: 0.16}, this.scene);
+                rightHand.position.set(1.5, 1.1, 0.5);
+                rightHand.parent = zombieGroup;
+                
+                // REALISTIC HUMAN LEGS - like pants in your image
                 const leftThigh = BABYLON.MeshBuilder.CreateCylinder("leftThigh", {
-                    height: 1.8, diameter: 0.5, tessellation: 8
+                    height: 1.4, diameter: 0.35, tessellation: 16
                 }, this.scene);
-                leftThigh.position.set(-0.4, 0.1, 0);
+                leftThigh.position.set(-0.25, 0.6, 0);
                 leftThigh.parent = zombieGroup;
                 
+                const leftKnee = BABYLON.MeshBuilder.CreateSphere("leftKnee", {diameter: 0.25}, this.scene);
+                leftKnee.position.set(-0.25, -0.1, 0);
+                leftKnee.parent = zombieGroup;
+                
                 const leftShin = BABYLON.MeshBuilder.CreateCylinder("leftShin", {
-                    height: 1.6, diameter: 0.4, tessellation: 8
+                    height: 1.3, diameter: 0.3, tessellation: 16
                 }, this.scene);
-                leftShin.position.set(-0.4, -1.8, 0);
+                leftShin.position.set(-0.25, -0.9, 0);
                 leftShin.parent = zombieGroup;
                 
-                const rightThigh = BABYLON.MeshBuilder.CreateCylinder("rightThigh", {
-                    height: 1.8, diameter: 0.5, tessellation: 8
+                const leftAnkle = BABYLON.MeshBuilder.CreateSphere("leftAnkle", {diameter: 0.2}, this.scene);
+                leftAnkle.position.set(-0.25, -1.6, 0);
+                leftAnkle.parent = zombieGroup;
+                
+                const leftFoot = BABYLON.MeshBuilder.CreateBox("leftFoot", {
+                    width: 0.25, height: 0.12, depth: 0.6
                 }, this.scene);
-                rightThigh.position.set(0.4, 0.1, 0);
+                leftFoot.position.set(-0.25, -1.7, 0.15);
+                leftFoot.parent = zombieGroup;
+                
+                const rightThigh = BABYLON.MeshBuilder.CreateCylinder("rightThigh", {
+                    height: 1.4, diameter: 0.35, tessellation: 16
+                }, this.scene);
+                rightThigh.position.set(0.25, 0.6, 0);
                 rightThigh.parent = zombieGroup;
                 
+                const rightKnee = BABYLON.MeshBuilder.CreateSphere("rightKnee", {diameter: 0.25}, this.scene);
+                rightKnee.position.set(0.25, -0.1, 0);
+                rightKnee.parent = zombieGroup;
+                
                 const rightShin = BABYLON.MeshBuilder.CreateCylinder("rightShin", {
-                    height: 1.6, diameter: 0.4, tessellation: 8
+                    height: 1.3, diameter: 0.3, tessellation: 16
                 }, this.scene);
-                rightShin.position.set(0.4, -1.8, 0);
+                rightShin.position.set(0.25, -0.9, 0);
                 rightShin.parent = zombieGroup;
                 
-                // REALISTIC zombie materials based on type
+                const rightAnkle = BABYLON.MeshBuilder.CreateSphere("rightAnkle", {diameter: 0.2}, this.scene);
+                rightAnkle.position.set(0.25, -1.6, 0);
+                rightAnkle.parent = zombieGroup;
+                
+                const rightFoot = BABYLON.MeshBuilder.CreateBox("rightFoot", {
+                    width: 0.25, height: 0.12, depth: 0.6
+                }, this.scene);
+                rightFoot.position.set(0.25, -1.7, 0.15);
+                rightFoot.parent = zombieGroup;
+                
+                // REALISTIC zombie materials based on type - torn clothes and blood
                 let fleshColor, clothingColor, eyeColor;
                 
                 switch(zombieType) {
                     case 'school':
-                        fleshColor = new BABYLON.Color3(0.6, 0.7, 0.5); // Pale student
-                        clothingColor = new BABYLON.Color3(0.2, 0.2, 0.5); // School uniform blue
-                        eyeColor = new BABYLON.Color3(0.8, 0.8, 0.9); // Pale eyes
+                        // ZOMBIE STUDENTS & TEACHERS - Young pale faces, school uniforms
+                        fleshColor = new BABYLON.Color3(0.75, 0.68, 0.58); // Young, pale flesh
+                        clothingColor = new BABYLON.Color3(0.2, 0.25, 0.45); // Navy blue school uniform
+                        eyeColor = new BABYLON.Color3(0.9, 0.85, 0.8); // Young, cloudy dead eyes
                         break;
                     case 'police':
-                        fleshColor = new BABYLON.Color3(0.5, 0.5, 0.4); // Darker flesh
-                        clothingColor = new BABYLON.Color3(0.1, 0.1, 0.3); // Police uniform
-                        eyeColor = new BABYLON.Color3(0.9, 0.1, 0.1); // Red angry eyes
+                        // ZOMBIE POLICE OFFICERS - Strong build, dark blue uniforms with badges
+                        fleshColor = new BABYLON.Color3(0.65, 0.55, 0.48); // Tough, weathered flesh
+                        clothingColor = new BABYLON.Color3(0.15, 0.15, 0.35); // Dark police blue uniform
+                        eyeColor = new BABYLON.Color3(0.9, 0.1, 0.1); // Intense red eyes
                         break;
                     case 'gas':
-                        fleshColor = new BABYLON.Color3(0.7, 0.5, 0.4); // Worker flesh
-                        clothingColor = new BABYLON.Color3(0.6, 0.4, 0.2); // Work clothes
-                        eyeColor = new BABYLON.Color3(0.8, 0.8, 0.6); // Yellow tired eyes
+                        // ZOMBIE GAS STATION WORKERS - Oil stains, work clothes
+                        fleshColor = new BABYLON.Color3(0.6, 0.52, 0.42); // Oil-stained, dirty flesh
+                        clothingColor = new BABYLON.Color3(0.35, 0.25, 0.15); // Brown/orange work clothes
+                        eyeColor = new BABYLON.Color3(0.8, 0.7, 0.4); // Yellow tired eyes
                         break;
                     case 'mall':
-                        fleshColor = new BABYLON.Color3(0.8, 0.6, 0.5); // Shopper flesh
-                        clothingColor = new BABYLON.Color3(0.7, 0.3, 0.5); // Fashionable clothes
-                        eyeColor = new BABYLON.Color3(0.6, 0.8, 0.9); // Blue fashion eyes
+                        // ZOMBIE SHOPPERS - Casual clothes, consumer appearance
+                        fleshColor = new BABYLON.Color3(0.72, 0.58, 0.52); // Consumer flesh tone
+                        clothingColor = new BABYLON.Color3(0.6, 0.35, 0.45); // Colorful casual clothing
+                        eyeColor = new BABYLON.Color3(0.6, 0.8, 0.9); // Blue consumer eyes
                         break;
                     case 'hospital':
-                        fleshColor = new BABYLON.Color3(0.5, 0.6, 0.5); // Sick flesh
-                        clothingColor = new BABYLON.Color3(0.8, 0.8, 0.8); // Medical whites
-                        eyeColor = new BABYLON.Color3(0.9, 0.9, 0.7); // Sickly yellow eyes
+                        // ZOMBIE NURSES & DOCTORS - Medical scrubs, pale sickly appearance
+                        fleshColor = new BABYLON.Color3(0.58, 0.62, 0.45); // Sickly, infected pale flesh
+                        clothingColor = new BABYLON.Color3(0.85, 0.9, 0.9); // White/light green medical scrubs
+                        eyeColor = new BABYLON.Color3(0.9, 0.9, 0.6); // Sickly yellow medical eyes
                         break;
-                    default: // normal
-                        fleshColor = new BABYLON.Color3(0.7, 0.6, 0.5);
-                        clothingColor = new BABYLON.Color3(0.4, 0.3, 0.25);
-                        eyeColor = new BABYLON.Color3(0.9, 0.85, 0.8);
+                    case 'office':
+                        // ZOMBIE OFFICE WORKERS - Business suits, professional appearance
+                        fleshColor = new BABYLON.Color3(0.68, 0.58, 0.52); // Professional flesh tone
+                        clothingColor = new BABYLON.Color3(0.25, 0.25, 0.35); // Dark business suit
+                        eyeColor = new BABYLON.Color3(0.7, 0.7, 0.8); // Professional dead eyes
+                        break;
+                    default: // normal - exactly like your image zombie
+                        fleshColor = new BABYLON.Color3(0.72, 0.62, 0.54); // Realistic human flesh tone with pale wounds
+                        clothingColor = new BABYLON.Color3(0.45, 0.38, 0.32); // Torn brown shirt/pants like image
+                        eyeColor = new BABYLON.Color3(0.8, 0.75, 0.7); // Cloudy dead eyes
                 }
                 
+                // Realistic flesh material with wounds and blood
                 const fleshMaterial = new BABYLON.StandardMaterial("zombieFleshMat", this.scene);
                 fleshMaterial.diffuseColor = fleshColor;
                 fleshMaterial.emissiveColor = fleshColor.scale(0.1);
+                fleshMaterial.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1); // Dull skin
+                fleshMaterial.roughness = 0.8; // Rough, damaged skin
                 
+                // Torn, bloodied clothing material
                 const clothingMaterial = new BABYLON.StandardMaterial("zombieClothingMat", this.scene);
                 clothingMaterial.diffuseColor = clothingColor;
-                clothingMaterial.emissiveColor = clothingColor.scale(0.1);
+                clothingMaterial.emissiveColor = clothingColor.scale(0.05);
+                clothingMaterial.specularColor = new BABYLON.Color3(0.05, 0.05, 0.05); // Matte torn fabric
+                clothingMaterial.roughness = 0.9; // Very rough, torn fabric
                 
+                // Dead, cloudy eyes material
                 const eyeMaterial = new BABYLON.StandardMaterial("zombieEyes", this.scene);
                 eyeMaterial.diffuseColor = eyeColor;
-                eyeMaterial.emissiveColor = eyeColor.scale(0.3); // Glowing eyes
+                eyeMaterial.emissiveColor = eyeColor.scale(0.2); // Slight dead glow
+                eyeMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3); // Some eye reflection
                 
-                // Apply materials to body parts
+                // Apply materials to body parts - realistic like your image
+                // FLESH PARTS
                 head.material = fleshMaterial;
+                neck.material = fleshMaterial;
+                leftShoulder.material = fleshMaterial;
                 leftUpperArm.material = fleshMaterial;
+                leftElbow.material = fleshMaterial;
                 leftForearm.material = fleshMaterial;
+                leftHand.material = fleshMaterial;
+                rightShoulder.material = fleshMaterial;
                 rightUpperArm.material = fleshMaterial;
+                rightElbow.material = fleshMaterial;
                 rightForearm.material = fleshMaterial;
+                rightHand.material = fleshMaterial;
+                leftKnee.material = fleshMaterial;
+                leftAnkle.material = fleshMaterial;
+                rightKnee.material = fleshMaterial;
+                rightAnkle.material = fleshMaterial;
+                
+                // CLOTHING PARTS - torn shirt and pants
+                torso.material = clothingMaterial;
+                belt.material = new BABYLON.StandardMaterial("beltMat", this.scene);
+                belt.material.diffuseColor = new BABYLON.Color3(0.15, 0.15, 0.15); // Dark belt
                 leftThigh.material = clothingMaterial;
                 leftShin.material = clothingMaterial;
                 rightThigh.material = clothingMaterial;
                 rightShin.material = clothingMaterial;
-                torso.material = clothingMaterial;
+                leftFoot.material = new BABYLON.StandardMaterial("shoeMat", this.scene);
+                leftFoot.material.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1); // Dark shoes
+                rightFoot.material = leftFoot.material;
+                
+                // EYES
                 leftEye.material = eyeMaterial;
                 rightEye.material = eyeMaterial;
+                
+                // ACCESSORIES - building-specific materials
+                if (accessory) {
+                    const accessoryMaterial = new BABYLON.StandardMaterial("accessoryMat", this.scene);
+                    switch(zombieType) {
+                        case 'police':
+                            // Gold/brass police badge
+                            accessoryMaterial.diffuseColor = new BABYLON.Color3(0.7, 0.6, 0.2);
+                            accessoryMaterial.specularColor = new BABYLON.Color3(0.8, 0.7, 0.3);
+                            break;
+                        case 'hospital':
+                            // Black stethoscope
+                            accessoryMaterial.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+                            accessoryMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                            break;
+                        case 'school':
+                            // White plastic school ID
+                            accessoryMaterial.diffuseColor = new BABYLON.Color3(0.9, 0.9, 0.9);
+                            accessoryMaterial.specularColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+                            break;
+                        case 'gas':
+                            // Brown leather tool belt
+                            accessoryMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.25, 0.15);
+                            accessoryMaterial.specularColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+                            break;
+                        case 'mall':
+                            // Colorful shopping bag
+                            accessoryMaterial.diffuseColor = new BABYLON.Color3(0.8, 0.3, 0.5);
+                            accessoryMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                            break;
+                        case 'office':
+                            // Black leather briefcase
+                            accessoryMaterial.diffuseColor = new BABYLON.Color3(0.15, 0.15, 0.15);
+                            accessoryMaterial.specularColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+                            break;
+                    }
+                    accessory.material = accessoryMaterial;
+                }
                 
                 // Store body parts for animation
                 const bodyParts = {
@@ -1419,6 +2551,103 @@
                         this.createMobileZombie();
                     }
                 }, 10000);
+            }
+            
+            startOfficeZombieJumping() {
+                console.log('🏢 Starting office zombie jumping system...');
+                
+                // Office zombies jump out periodically
+                setInterval(() => {
+                    if (this.gameStarted && this.officeBuildings && this.officeBuildings.length > 0) {
+                        // Random chance for zombie to jump (20% chance every interval)
+                        if (Math.random() < 0.2) {
+                            this.createJumpingOfficeZombie();
+                        }
+                    }
+                }, 8000); // Every 8 seconds
+            }
+            
+            createJumpingOfficeZombie() {
+                // Pick a random office building
+                const randomOffice = this.officeBuildings[Math.floor(Math.random() * this.officeBuildings.length)];
+                
+                console.log(`🧟‍♂️ Office zombie jumping from ${randomOffice.name}!`);
+                
+                // Create office worker zombie
+                const zombieResult = this.createRealisticZombie('office');
+                
+                // Position zombie at a random floor window
+                const floors = Math.floor(randomOffice.height / 4);
+                const jumpFloor = Math.floor(Math.random() * floors) + 1; // Not ground floor
+                const side = Math.floor(Math.random() * 4); // 4 sides of building
+                
+                let jumpX = randomOffice.position.x;
+                let jumpZ = randomOffice.position.z;
+                let jumpY = this.groundLevel + 3 + jumpFloor * 4;
+                
+                // Position on building exterior based on side
+                switch(side) {
+                    case 0: jumpZ += 15; break; // Front
+                    case 1: jumpX += 15; break; // Right
+                    case 2: jumpZ -= 15; break; // Back
+                    case 3: jumpX -= 15; break; // Left
+                }
+                
+                zombieResult.group.position.set(jumpX, jumpY, jumpZ);
+                
+                // Create office worker zombie with business attire
+                const zombieData = {
+                    group: zombieResult.group,
+                    mesh: zombieResult.parts.torso,
+                    health: 2, // Office workers - medium health
+                    speed: 0.09, // Business pace
+                    lastAttack: 0,
+                    id: Date.now(),
+                    parts: zombieResult.parts,
+                    animationTime: Math.random() * Math.PI * 2,
+                    type: zombieResult.type,
+                    isJumping: true,
+                    jumpStartY: jumpY,
+                    fallSpeed: 0
+                };
+                
+                this.zombies.push(zombieData);
+                
+                // Animate the zombie falling from the window
+                this.animateZombieFall(zombieData);
+                
+                this.showInteractionPrompt(`💼 Office zombie jumped from ${randomOffice.name}!`);
+                this.updateUI();
+                
+                console.log(`Office zombie created at floor ${jumpFloor} of ${randomOffice.name}`);
+            }
+            
+            animateZombieFall(zombieData) {
+                const fallAnimation = () => {
+                    if (!zombieData.isJumping) return;
+                    
+                    // Gravity effect
+                    zombieData.fallSpeed += 0.5; // Acceleration due to gravity
+                    zombieData.group.position.y -= zombieData.fallSpeed;
+                    
+                    // Check if hit ground
+                    if (zombieData.group.position.y <= this.groundLevel + 1) {
+                        zombieData.group.position.y = this.groundLevel;
+                        zombieData.isJumping = false;
+                        zombieData.fallSpeed = 0;
+                        
+                        // Add some impact effect or sound here if desired
+                        console.log('💥 Office zombie hit the ground!');
+                        this.showInteractionPrompt('💥 Zombie landed! Watch out!');
+                        return;
+                    }
+                    
+                    // Continue falling
+                    requestAnimationFrame(fallAnimation);
+                };
+                
+                // Start the falling animation
+                requestAnimationFrame(fallAnimation);
             }
             
             shoot() {
@@ -1665,6 +2894,21 @@
                     zombie.position.y = this.groundLevel;
                     zombie.lookAt(this.camera.position);
                     
+                    // Make zombies more visible when player is in helicopter
+                    if (this.inHelicopter) {
+                        // Slightly increase zombie size when viewed from helicopter for better visibility
+                        if (!zombieData.helicopterScaled) {
+                            zombie.scaling.scaleInPlace(1.2); // 20% larger when in helicopter
+                            zombieData.helicopterScaled = true;
+                        }
+                    } else {
+                        // Reset zombie size when on ground
+                        if (zombieData.helicopterScaled) {
+                            zombie.scaling.scaleInPlace(1/1.2); // Back to normal size
+                            zombieData.helicopterScaled = false;
+                        }
+                    }
+                    
                     // Enhanced animation for giant zombies
                     zombieData.animationTime += zombieData.isGiant ? 0.06 : 0.08;
                     const shamble = Math.sin(zombieData.animationTime) * (zombieData.isGiant ? 0.2 : 0.1);
@@ -1713,6 +2957,8 @@
                 
                 if (this.inCar) {
                     this.updateCarMovement();
+                } else if (this.inHelicopter) {
+                    this.updateHelicopterMovement();
                 } else {
                     this.updateWalkingMovement();
                 }
@@ -1722,6 +2968,9 @@
                 
                 // Check for building interaction
                 this.checkBuildingInteraction();
+                
+                // Check for helicopter interaction
+                this.checkHelicopterInteraction();
             }
             
             updateWalkingMovement() {
@@ -1784,6 +3033,60 @@
                 this.camera.position = carPos;
                 
                 // Keep mouse aiming control - DON'T force camera rotation to follow car
+            }
+            
+            updateHelicopterMovement() {
+                // Helicopter flight controls
+                const baseSpeed = 1.5;
+                const currentSpeed = baseSpeed * (1 + this.helicopterSpeed * 0.5);
+                
+                // Handle altitude controls (Space = up, Shift = down)
+                if (this.keyState['Space']) {
+                    this.helicopterAltitude += 0.8;
+                    this.helicopterAltitude = Math.min(this.helicopterAltitude, 100); // Max altitude
+                }
+                if (this.keyState['ShiftLeft'] || this.keyState['ShiftRight']) {
+                    this.helicopterAltitude -= 0.8;
+                    this.helicopterAltitude = Math.max(this.helicopterAltitude, 0); // Ground level
+                }
+                
+                // Horizontal movement
+                if (this.moveVector.x !== 0 || this.moveVector.z !== 0) {
+                    const forward = this.camera.getForwardRay().direction.clone();
+                    forward.y = 0; // Keep horizontal
+                    const right = BABYLON.Vector3.Cross(BABYLON.Vector3.Up(), forward).normalize();
+                    
+                    const moveDirection = forward.scale(this.moveVector.z).add(right.scale(this.moveVector.x));
+                    this.currentHelicopter.group.position.addInPlace(moveDirection.scale(currentSpeed));
+                    
+                    // Helicopter tilting effect
+                    this.currentHelicopter.group.rotation.x = this.moveVector.z * -0.1; // Pitch
+                    this.currentHelicopter.group.rotation.z = this.moveVector.x * 0.1;  // Roll
+                }
+                
+                // Update helicopter and camera position
+                const helicopterPos = this.currentHelicopter.group.position.clone();
+                helicopterPos.y = this.groundLevel + 8 + this.helicopterAltitude; // Helicopter height (higher base + altitude)
+                this.currentHelicopter.group.position.y = helicopterPos.y;
+                
+                // Camera follows helicopter
+                const cameraPos = helicopterPos.clone();
+                cameraPos.y += 2; // Camera inside cockpit
+                this.camera.position = cameraPos;
+                
+                // Animate rotors
+                if (this.currentHelicopter.rotorSpeed > 0) {
+                    this.currentHelicopter.rotorBlades.forEach(blade => {
+                        blade.rotation.y += this.currentHelicopter.rotorSpeed;
+                    });
+                    this.currentHelicopter.tailRotor.rotation.z += this.currentHelicopter.rotorSpeed * 3;
+                }
+                
+                // Hover effect
+                const hoverTime = Date.now() * 0.002;
+                this.currentHelicopter.group.position.y += Math.sin(hoverTime) * 0.2;
+                
+                console.log(`🚁 Flying at altitude: ${this.helicopterAltitude.toFixed(1)}`);
             }
             
             checkCarInteraction() {
@@ -1881,6 +3184,48 @@
                 });
             }
             
+            checkHelicopterInteraction() {
+                if (this.inHelicopter || this.inCar || !this.helicopter) return;
+                
+                const helicopterDistance = BABYLON.Vector3.Distance(this.camera.position, this.helicopter.group.position);
+                if (helicopterDistance < 10) {
+                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                    const enterText = isMobile ? `🚁 Hold FIRE button to enter helicopter` : `🚁 Press F key to enter helicopter`;
+                    this.showInteractionPrompt(enterText);
+                }
+                
+                // Check if helicopter can park on skyscraper helipad
+                if (this.inHelicopter && this.skyscraperHelipad) {
+                    const helipadDistance = BABYLON.Vector3.Distance(this.camera.position, this.skyscraperHelipad.position);
+                    if (helipadDistance < 20) {
+                        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                        const landText = isMobile ? `🏢 Hold FIRE button to land on helipad` : `🏢 Press L key to land on helipad`;
+                        this.showInteractionPrompt(landText);
+                    }
+                }
+            }
+            
+            landHelicopterOnSkyscraper() {
+                if (!this.inHelicopter || !this.skyscraperHelipad) return;
+                
+                console.log('🏢 Landing helicopter on skyscraper helipad!');
+                
+                // Move helicopter to exact helipad position
+                this.currentHelicopter.group.position.x = this.skyscraperHelipad.position.x;
+                this.currentHelicopter.group.position.y = this.skyscraperHelipad.position.y + 1; // Just above helipad
+                this.currentHelicopter.group.position.z = this.skyscraperHelipad.position.z;
+                
+                // Set altitude to landed position
+                this.helicopterAltitude = 3; // Reset to minimum safe altitude
+                
+                // Update camera position
+                const cameraPos = this.currentHelicopter.group.position.clone();
+                cameraPos.y += 2; // Camera inside cockpit
+                this.camera.position = cameraPos;
+                
+                this.showInteractionPrompt('🏢 Helicopter parked on skyscraper helipad! Great view from up here!');
+            }
+            
             showInteractionPrompt(text) {
                 console.log(text);
                 // Show visual prompt on screen
@@ -1938,6 +3283,49 @@
                 this.carSpeed = 0;
                 
                 console.log('Exited car!');
+            }
+            
+            enterHelicopter() {
+                if (this.inHelicopter || !this.helicopter.available) return;
+                
+                this.inHelicopter = true;
+                this.currentHelicopter = this.helicopter;
+                this.helicopter.available = false;
+                this.helicopterSpeed = 0;
+                this.helicopterAltitude = 3; // Start at safe altitude above zombies
+                
+                // Start rotor animation
+                this.helicopter.rotorSpeed = 0.2;
+                
+                console.log('🚁 Entered helicopter! Use WASD to fly, Arrow Up/Down for altitude');
+                this.showInteractionPrompt('🚁 HELICOPTER: WASD=Move, ↑↓=Altitude, Space/Shift=Altitude, G=Exit');
+            }
+            
+            exitHelicopter() {
+                if (!this.inHelicopter) return;
+                
+                // Must be close to ground to exit (allow for minimum safe altitude)
+                if (this.camera.position.y > this.groundLevel + 15) {
+                    this.showInteractionPrompt('🚁 Lower altitude to exit helicopter! Use ↓ or Shift key.');
+                    return;
+                }
+                
+                // Position player next to helicopter
+                const exitPos = this.currentHelicopter.group.position.clone();
+                exitPos.x += 8; // Exit to the side
+                exitPos.y = this.groundLevel + this.playerHeight;
+                this.camera.position = exitPos;
+                
+                this.currentHelicopter.available = true;
+                this.currentHelicopter = null;
+                this.inHelicopter = false;
+                this.helicopterSpeed = 0;
+                this.helicopterAltitude = 3; // Start at safe altitude above zombies
+                
+                // Stop rotor animation
+                this.helicopter.rotorSpeed = 0;
+                
+                console.log('Exited helicopter!');
             }
             
             enterBuilding(building) {
@@ -2399,6 +3787,16 @@
                 document.getElementById('ammo').textContent = this.ammo;
                 document.getElementById('kills').textContent = this.kills;
                 document.getElementById('zombieCount').textContent = this.zombies.length;
+                
+                // Show helicopter distance
+                if (this.helicopter && !this.inHelicopter) {
+                    const distance = BABYLON.Vector3.Distance(this.camera.position, this.helicopter.group.position);
+                    document.getElementById('helicopterDistance').textContent = `${distance.toFixed(0)}m`;
+                } else if (this.inHelicopter) {
+                    document.getElementById('helicopterDistance').textContent = 'PILOT';
+                } else {
+                    document.getElementById('helicopterDistance').textContent = '---';
+                }
             }
             
             updateCarVisualDamage() {
@@ -2457,6 +3855,7 @@
             game = new SimpleZombieGame();
             game.gameStarted = true;
             setTimeout(() => game.spawnMobileZombies(), 2000);
+            setTimeout(() => game.startOfficeZombieJumping(), 5000);
         }
     </script>
 </body>

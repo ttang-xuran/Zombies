@@ -1,36 +1,71 @@
-# 🧟 Mobile Zombie Survival Game
+# 🧟 Zombie Survival Game
 
-A thrilling 3D zombie survival game optimized for mobile devices, built with Babylon.js.
+A comprehensive 3D zombie survival game with massive urban environments, vehicles, buildings, and dynamic zombie gameplay. Fully compatible with both desktop and mobile devices.
 
 ## 🎮 Play Now
 
 **Live Game:** [Play on GitHub Pages](https://your-username.github.io/zombie-game/)
 
-## 📱 Mobile-Optimized Features
+## 🌆 Major Game Features
 
-- **Touch Controls:** Virtual joystick for movement
-- **Look Controls:** Touch the upper screen to look around  
-- **Shoot Button:** Red fire button for shooting zombies
-- **iPhone Compatible:** Optimized for iOS devices
-- **Responsive Design:** Works on all mobile screen sizes
+### 🏙️ Massive Urban Environment
+- **5 building types:** School, Police Station, Hospital, Gas Station, Shopping Mall
+- **Skyscraper:** 120-unit tall building with helicopter landing pad
+- **5 office buildings:** Varying heights for realistic skyline
+- **River boundaries:** Surrounding city with bridges for crossing
+- **Street lighting:** Realistic placement with animated glow
+- **Atmospheric elements:** Gas cans, dead bodies, urban debris
 
-## 🕹️ How to Play
+### 🚁 Vehicle System
+- **Cars:** Driveable vehicles with damage system and zombie-killing capability
+- **Helicopter:** Flyable helicopter with altitude controls and rooftop landing
+- **Realistic physics:** Different handling for each vehicle type
+- **Visual damage:** Cars show damage effects from zombie impacts
 
-### Mobile Controls
-- **Move:** Use the virtual joystick (bottom left)
-- **Look:** Touch and drag on the upper part of the screen
-- **Shoot:** Tap the red "FIRE" button (bottom right)
-- **Survive:** Kill zombies and avoid being overwhelmed!
+### 🧟‍♂️ Advanced Zombie System
+- **Building-specific zombies:** Each location has themed zombie types
+  - **School:** Students & teachers in school uniforms with ID badges
+  - **Police Station:** Officers with police badges and uniforms
+  - **Hospital:** Nurses & doctors with stethoscopes and medical scrubs
+  - **Gas Station:** Workers with tool belts and work clothes
+  - **Mall:** Shoppers with shopping bags and casual wear
+  - **Office Buildings:** Business workers with briefcases and suits
+- **Dynamic spawning:** Office zombies jump from building windows with falling physics
+- **Realistic appearance:** Human proportions, torn clothing, professional accessories
+- **Varied stats:** Different health, speed, and damage based on zombie profession
 
-## 🧟 Game Features
+## 🕹️ Controls
 
-- **Realistic Zombies:** Human-shaped zombies with decayed appearance
-- **Ground-Based Physics:** Everything walks on the ground naturally  
-- **3D Environment:** Immersive 3D world with buildings
-- **Progressive Difficulty:** More zombies spawn over time
-- **Health System:** Take damage when zombies get too close
-- **Ammo Management:** Limited ammunition adds strategy
-- **Kill Counter:** Track your zombie elimination score
+### 🖥️ Desktop Controls
+- **Movement:** WASD keys or Arrow keys
+- **Camera:** Mouse movement for aiming
+- **Shooting:** Spacebar (unlimited ammo)
+- **Interactions:** F key (enter), G key (exit)
+- **Helicopter Altitude:** Arrow Up/Down or Space/Shift keys
+- **Helicopter Landing:** L key for skyscraper helipad
+
+### 📱 Mobile/iPhone Controls
+- **Movement:** Virtual joystick (bottom left)
+- **Camera:** Touch and drag anywhere on screen
+- **Shooting:** Fire button 🔥 (bottom right)
+- **Interactions:** Hold fire button for 1 second (enter/exit vehicles, buildings)
+- **Helicopter Altitude:** Touch buttons ↑↓ (appear when in helicopter)
+- **All vehicle/building interactions:** Hold fire button system
+
+## 🎯 Gameplay Mechanics
+
+### Core Survival
+- **Unlimited ammo:** Focus on survival, not resource management
+- **Building exploration:** Enter buildings to find profession-specific zombies
+- **Vehicle combat:** Use cars to run over zombies or helicopter for aerial advantage
+- **Health system:** Take damage from zombie attacks, manage your survival
+
+### Advanced Features
+- **Helicopter rooftop landing:** Land on skyscraper for ultimate high ground
+- **Building collision system:** Realistic walls, must use doors to enter/exit
+- **River crossing:** Use bridges to navigate between city areas
+- **Dynamic zombie encounters:** Office workers jump from windows unpredictably
+- **Interactive prompts:** Context-sensitive messages for all interactions
 
 ## 🎯 Deployment Instructions
 
