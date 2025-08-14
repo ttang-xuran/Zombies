@@ -417,6 +417,137 @@
                     new BABYLON.Vector3(0, this.playerHeight, 0), this.scene);
                 this.camera.setTarget(new BABYLON.Vector3(0, this.playerHeight, 10));
                 this.camera.speed = 0.6;
+                
+                // SMOOTH CAMERA CONTROL SYSTEM - prevents dizziness and motion sickness
+                this.cameraControl = {
+                    targetRotationX: 0,
+                    targetRotationY: 0,
+                    currentRotationX: 0,
+                    currentRotationY: 0,
+                    sensitivity: 0.0008,     // Much lower sensitivity - reduced from 0.003
+                    smoothness: 0.15,        // Smooth interpolation factor (higher = smoother)
+                    maxVerticalAngle: Math.PI / 3,   // 60 degrees up/down
+                    maxHorizontalAngle: Math.PI / 2, // 90 degrees left/right
+                    motionComfort: true,     // Enable comfort features
+                    lastMouseX: 0,
+                    lastMouseY: 0,
+                    mouseVelocityX: 0,
+                    mouseVelocityY: 0,
+                    velocityDamping: 0.9     // Smooth velocity decay
+                };
+                
+                // Initialize camera rotation targets
+                this.cameraControl.currentRotationX = this.camera.rotation.x;
+                this.cameraControl.currentRotationY = this.camera.rotation.y;
+                this.cameraControl.targetRotationX = this.camera.rotation.x;
+                this.cameraControl.targetRotationY = this.camera.rotation.y;
+                
+                // SMOOTH MOVEMENT SYSTEM - prevents jerky walking that causes motion sickness
+                this.movementControl = {
+                    currentVelocityX: 0,
+                    currentVelocityZ: 0,
+                    targetVelocityX: 0,
+                    targetVelocityZ: 0,
+                    acceleration: 0.15,      // How quickly player accelerates
+                    deceleration: 0.25,      // How quickly player stops
+                    maxSpeed: 0.6,           // Maximum walking speed
+                    smoothness: 0.8          // Movement smoothness factor
+                };
+                
+                // Start smooth camera update loop
+                this.startSmoothCameraUpdates();
+                
+                // Add motion comfort controls
+                this.setupMotionComfortControls();
+                
+                console.log('🎯 Smooth camera system initialized - dizziness prevention enabled');
+            }
+            
+            setupMotionComfortControls() {
+                // Motion comfort keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (!this.cameraControl) return;
+                    
+                    switch (e.key) {
+                        case '1': // Sensitivity down
+                            this.cameraControl.sensitivity = Math.max(0.0002, this.cameraControl.sensitivity - 0.0002);
+                            this.showInteractionPrompt(`📉 Mouse sensitivity: ${(this.cameraControl.sensitivity * 1000).toFixed(1)}`);
+                            console.log('🎯 Reduced mouse sensitivity to:', this.cameraControl.sensitivity);
+                            break;
+                            
+                        case '2': // Sensitivity up
+                            this.cameraControl.sensitivity = Math.min(0.003, this.cameraControl.sensitivity + 0.0002);
+                            this.showInteractionPrompt(`📈 Mouse sensitivity: ${(this.cameraControl.sensitivity * 1000).toFixed(1)}`);
+                            console.log('🎯 Increased mouse sensitivity to:', this.cameraControl.sensitivity);
+                            break;
+                            
+                        case '3': // Toggle motion comfort
+                            this.cameraControl.motionComfort = !this.cameraControl.motionComfort;
+                            const status = this.cameraControl.motionComfort ? 'ON' : 'OFF';
+                            this.showInteractionPrompt(`🎮 Motion comfort mode: ${status}`);
+                            console.log('🎮 Motion comfort toggled:', status);
+                            break;
+                            
+                        case '4': // Camera smoothness adjustment
+                            this.cameraControl.smoothness = this.cameraControl.smoothness >= 0.25 ? 0.05 : this.cameraControl.smoothness + 0.05;
+                            this.showInteractionPrompt(`🎯 Camera smoothness: ${(this.cameraControl.smoothness * 100).toFixed(0)}%`);
+                            console.log('🎯 Camera smoothness set to:', this.cameraControl.smoothness);
+                            break;
+                    }
+                });
+                
+                // Show initial comfort settings
+                setTimeout(() => {
+                    this.showInteractionPrompt('🎮 COMFORT CONTROLS: 1/2=Sensitivity, 3=Comfort Mode, 4=Smoothness');
+                }, 3000);
+            }
+            
+            startSmoothCameraUpdates() {
+                // Smooth camera update loop - runs every frame to prevent jerky movement
+                const updateSmoothCamera = () => {
+                    if (!this.camera || !this.cameraControl) return;
+                    
+                    // Smooth interpolation of camera rotation - prevents instant snapping
+                    const smoothness = this.cameraControl.smoothness;
+                    
+                    // Interpolate to target rotation smoothly
+                    this.cameraControl.currentRotationX += (this.cameraControl.targetRotationX - this.cameraControl.currentRotationX) * smoothness;
+                    this.cameraControl.currentRotationY += (this.cameraControl.targetRotationY - this.cameraControl.currentRotationY) * smoothness;
+                    
+                    // Apply smoothed rotation to camera
+                    this.camera.rotation.x = this.cameraControl.currentRotationX;
+                    this.camera.rotation.y = this.cameraControl.currentRotationY;
+                    
+                    // Continue the smooth update loop
+                    requestAnimationFrame(updateSmoothCamera);
+                };
+                
+                // Start the smooth camera update loop
+                updateSmoothCamera();
+            }
+            
+            updateCameraTarget(deltaX, deltaY, forceInstant = false) {
+                if (!this.cameraControl) return;
+                
+                const sensitivity = this.cameraControl.sensitivity;
+                
+                // Calculate velocity-based sensitivity (slower for large movements)
+                const mouseSpeed = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                const dynamicSensitivity = sensitivity * (1 / (1 + mouseSpeed * 0.01));
+                
+                // Update target rotation (not actual camera rotation)
+                this.cameraControl.targetRotationY += deltaX * dynamicSensitivity;
+                this.cameraControl.targetRotationX += deltaY * dynamicSensitivity;
+                
+                // Apply angle limits
+                this.cameraControl.targetRotationX = Math.max(-this.cameraControl.maxVerticalAngle, 
+                    Math.min(this.cameraControl.maxVerticalAngle, this.cameraControl.targetRotationX));
+                
+                // Force instant update for specific cases (like entering vehicles)
+                if (forceInstant) {
+                    this.cameraControl.currentRotationX = this.cameraControl.targetRotationX;
+                    this.cameraControl.currentRotationY = this.cameraControl.targetRotationY;
+                }
             }
             
             createLighting() {
@@ -1900,14 +2031,8 @@
                 const deltaX = screenX - centerX;
                 const deltaY = screenY - centerY;
                 
-                // Convert to camera rotation
-                const sensitivity = 0.003;
-                const targetRotationY = this.camera.rotation.y + (deltaX * sensitivity);
-                const targetRotationX = this.camera.rotation.x + (deltaY * sensitivity);
-                
-                // Smooth camera rotation
-                this.camera.rotation.y = targetRotationY;
-                this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, targetRotationX));
+                // SMOOTH CAMERA ROTATION - prevents dizziness
+                this.updateCameraTarget(deltaX, deltaY);
             }
             
             setupAltitudeControls() {
@@ -2124,20 +2249,16 @@
                     const offsetX = e.clientX - centerX;
                     const offsetY = e.clientY - centerY;
                     
-                    // Convert screen coordinates to camera angles
-                    // Horizontal rotation (Y axis) - left/right
-                    const maxHorizontalAngle = Math.PI / 3; // 60 degrees each side
+                    // SMOOTH CAMERA AIMING - prevents dizziness from instant snapping
                     const horizontalRange = window.innerWidth / 2;
-                    this.camera.rotation.y = (offsetX / horizontalRange) * maxHorizontalAngle;
-                    
-                    // Vertical rotation (X axis) - up/down  
-                    const maxVerticalAngle = Math.PI / 4; // 45 degrees up/down
                     const verticalRange = window.innerHeight / 2;
-                    this.camera.rotation.x = (offsetY / verticalRange) * maxVerticalAngle;
                     
-                    // Clamp to reasonable limits
-                    this.camera.rotation.y = Math.max(-maxHorizontalAngle, Math.min(maxHorizontalAngle, this.camera.rotation.y));
-                    this.camera.rotation.x = Math.max(-maxVerticalAngle, Math.min(maxVerticalAngle, this.camera.rotation.x));
+                    // Convert screen position to smooth camera movement
+                    const targetDeltaX = offsetX / horizontalRange * 100; // Normalize to reasonable range
+                    const targetDeltaY = offsetY / verticalRange * 100;
+                    
+                    // Update camera smoothly instead of instant assignment
+                    this.updateCameraTarget(targetDeltaX * 0.02, targetDeltaY * 0.02);
                     
                     // DEBUG: Show if in car
                     const carStatus = this.inCar ? ' [IN CAR]' : ' [ON FOOT]';
@@ -3176,21 +3297,44 @@
             }
             
             updateWalkingMovement() {
-                const speed = 0.6;
-                if (this.moveVector.x !== 0 || this.moveVector.z !== 0) {
+                if (!this.movementControl) return;
+                
+                // SMOOTH MOVEMENT SYSTEM - prevents jerky motion that causes dizziness
+                const control = this.movementControl;
+                
+                // Calculate target velocities based on input
+                control.targetVelocityX = this.moveVector.x * control.maxSpeed;
+                control.targetVelocityZ = this.moveVector.z * control.maxSpeed;
+                
+                // Smooth acceleration/deceleration to target velocities
+                const acceleration = (this.moveVector.x !== 0) ? control.acceleration : control.deceleration;
+                const accelerationZ = (this.moveVector.z !== 0) ? control.acceleration : control.deceleration;
+                
+                control.currentVelocityX += (control.targetVelocityX - control.currentVelocityX) * acceleration;
+                control.currentVelocityZ += (control.targetVelocityZ - control.currentVelocityZ) * accelerationZ;
+                
+                // Apply dead zone to eliminate tiny movements
+                if (Math.abs(control.currentVelocityX) < 0.01) control.currentVelocityX = 0;
+                if (Math.abs(control.currentVelocityZ) < 0.01) control.currentVelocityZ = 0;
+                
+                // Only move if there's actual velocity
+                if (Math.abs(control.currentVelocityX) > 0.01 || Math.abs(control.currentVelocityZ) > 0.01) {
                     const forward = this.camera.getForwardRay().direction.clone();
                     forward.y = 0;
-                    const right = BABYLON.Vector3.Cross(BABYLON.Vector3.Up(), forward).normalize(); // Fixed cross product order
+                    forward.normalize();
+                    const right = BABYLON.Vector3.Cross(BABYLON.Vector3.Up(), forward).normalize();
                     
-                    // Movement direction with correct left/right
-                    const moveDirection = forward.scale(this.moveVector.z).add(right.scale(this.moveVector.x));
-                    
-                    console.log('KEYBOARD MOVEMENT - moveVector.x:', this.moveVector.x, 'moveVector.z:', this.moveVector.z);
+                    // Smooth movement direction using current velocities
+                    const moveDirection = forward.scale(control.currentVelocityZ).add(right.scale(control.currentVelocityX));
                     
                     // Check for building collision before moving
-                    const newPosition = this.camera.position.clone().add(moveDirection.scale(speed));
+                    const newPosition = this.camera.position.clone().add(moveDirection);
                     if (!this.checkBuildingCollision(newPosition)) {
-                        this.camera.position.addInPlace(moveDirection.scale(speed));
+                        this.camera.position.addInPlace(moveDirection);
+                    } else {
+                        // If collision, gradually stop movement in that direction
+                        control.currentVelocityX *= 0.5;
+                        control.currentVelocityZ *= 0.5;
                     }
                 }
                 
@@ -3238,43 +3382,92 @@
             }
             
             updateHelicopterMovement() {
-                // Helicopter flight controls
-                const baseSpeed = 1.5;
-                const currentSpeed = baseSpeed * (1 + this.helicopterSpeed * 0.5);
+                // SMOOTH HELICOPTER CONTROLS - prevents dizziness from abrupt movements
+                const baseSpeed = 0.8; // Reduced speed for smoother movement
+                const currentSpeed = baseSpeed * (1 + this.helicopterSpeed * 0.3);
                 
-                // Handle altitude controls (Space = up, Shift = down)
+                // Initialize helicopter smooth controls if needed
+                if (!this.currentHelicopter.smoothControl) {
+                    this.currentHelicopter.smoothControl = {
+                        velocityX: 0,
+                        velocityZ: 0,
+                        pitchRotation: 0,
+                        rollRotation: 0,
+                        acceleration: 0.08,
+                        deceleration: 0.15,
+                        rotationSmoothing: 0.1
+                    };
+                }
+                
+                const smooth = this.currentHelicopter.smoothControl;
+                
+                // Smooth altitude controls (reduced speed to prevent vertigo)
                 if (this.keyState['Space']) {
-                    this.helicopterAltitude += 0.8;
-                    this.helicopterAltitude = Math.min(this.helicopterAltitude, 100); // Max altitude
+                    this.helicopterAltitude += 0.4; // Reduced from 0.8
+                    this.helicopterAltitude = Math.min(this.helicopterAltitude, 100);
                 }
                 if (this.keyState['ShiftLeft'] || this.keyState['ShiftRight']) {
-                    this.helicopterAltitude -= 0.8;
-                    this.helicopterAltitude = Math.max(this.helicopterAltitude, 0); // Ground level
+                    this.helicopterAltitude -= 0.4; // Reduced from 0.8
+                    this.helicopterAltitude = Math.max(this.helicopterAltitude, 0);
                 }
                 
-                // Horizontal movement
-                if (this.moveVector.x !== 0 || this.moveVector.z !== 0) {
+                // Smooth horizontal movement with acceleration/deceleration
+                const targetVelX = this.moveVector.x * currentSpeed;
+                const targetVelZ = this.moveVector.z * currentSpeed;
+                
+                // Apply acceleration or deceleration
+                const accelX = (this.moveVector.x !== 0) ? smooth.acceleration : smooth.deceleration;
+                const accelZ = (this.moveVector.z !== 0) ? smooth.acceleration : smooth.deceleration;
+                
+                smooth.velocityX += (targetVelX - smooth.velocityX) * accelX;
+                smooth.velocityZ += (targetVelZ - smooth.velocityZ) * accelZ;
+                
+                // Apply dead zone to prevent tiny oscillations
+                if (Math.abs(smooth.velocityX) < 0.01) smooth.velocityX = 0;
+                if (Math.abs(smooth.velocityZ) < 0.01) smooth.velocityZ = 0;
+                
+                // Apply smooth movement
+                if (Math.abs(smooth.velocityX) > 0.01 || Math.abs(smooth.velocityZ) > 0.01) {
                     const forward = this.camera.getForwardRay().direction.clone();
-                    forward.y = 0; // Keep horizontal
+                    forward.y = 0;
+                    forward.normalize();
                     const right = BABYLON.Vector3.Cross(BABYLON.Vector3.Up(), forward).normalize();
                     
-                    const moveDirection = forward.scale(this.moveVector.z).add(right.scale(this.moveVector.x));
-                    this.currentHelicopter.group.position.addInPlace(moveDirection.scale(currentSpeed));
+                    const moveDirection = forward.scale(smooth.velocityZ).add(right.scale(smooth.velocityX));
+                    this.currentHelicopter.group.position.addInPlace(moveDirection);
                     
-                    // Helicopter tilting effect
-                    this.currentHelicopter.group.rotation.x = this.moveVector.z * -0.1; // Pitch
-                    this.currentHelicopter.group.rotation.z = this.moveVector.x * 0.1;  // Roll
+                    // Smooth helicopter tilting - much more subtle
+                    const targetPitch = this.moveVector.z * -0.05; // Reduced from -0.1
+                    const targetRoll = this.moveVector.x * 0.05;   // Reduced from 0.1
+                    
+                    smooth.pitchRotation += (targetPitch - smooth.pitchRotation) * smooth.rotationSmoothing;
+                    smooth.rollRotation += (targetRoll - smooth.rollRotation) * smooth.rotationSmoothing;
+                    
+                    this.currentHelicopter.group.rotation.x = smooth.pitchRotation;
+                    this.currentHelicopter.group.rotation.z = smooth.rollRotation;
+                } else {
+                    // Return to level flight when not moving
+                    smooth.pitchRotation += (0 - smooth.pitchRotation) * smooth.rotationSmoothing;
+                    smooth.rollRotation += (0 - smooth.rollRotation) * smooth.rotationSmoothing;
+                    
+                    this.currentHelicopter.group.rotation.x = smooth.pitchRotation;
+                    this.currentHelicopter.group.rotation.z = smooth.rollRotation;
                 }
                 
-                // Update helicopter and camera position
+                // Smooth helicopter and camera positioning
                 const helicopterPos = this.currentHelicopter.group.position.clone();
-                helicopterPos.y = this.groundLevel + 8 + this.helicopterAltitude; // Helicopter height (higher base + altitude)
+                helicopterPos.y = this.groundLevel + 8 + this.helicopterAltitude;
                 this.currentHelicopter.group.position.y = helicopterPos.y;
                 
-                // Camera follows helicopter
+                // Smooth camera following with slight lag to reduce motion sickness
                 const cameraPos = helicopterPos.clone();
-                cameraPos.y += 2; // Camera inside cockpit
-                this.camera.position = cameraPos;
+                cameraPos.y += 2;
+                
+                // Smooth camera position interpolation
+                const cameraLag = 0.85; // High value = more lag, smoother following
+                this.camera.position.x += (cameraPos.x - this.camera.position.x) * cameraLag;
+                this.camera.position.z += (cameraPos.z - this.camera.position.z) * cameraLag;
+                this.camera.position.y = cameraPos.y; // Height follows immediately
                 
                 // Animate rotors
                 if (this.currentHelicopter.rotorSpeed > 0) {
@@ -3284,9 +3477,12 @@
                     this.currentHelicopter.tailRotor.rotation.z += this.currentHelicopter.rotorSpeed * 3;
                 }
                 
-                // Hover effect
-                const hoverTime = Date.now() * 0.002;
-                this.currentHelicopter.group.position.y += Math.sin(hoverTime) * 0.2;
+                // Subtle hover effect - much reduced to prevent motion sickness
+                if (this.cameraControl.motionComfort) {
+                    // Very subtle hover for realism without causing dizziness
+                    const hoverTime = Date.now() * 0.0008; // Slower oscillation
+                    this.currentHelicopter.group.position.y += Math.sin(hoverTime) * 0.05; // Much smaller amplitude
+                }
                 
                 // GIANT MONSTER ATTACK SYSTEM - Check if helicopter is too close to monster
                 this.checkGiantMonsterAttack();
