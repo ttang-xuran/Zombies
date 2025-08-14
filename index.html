@@ -2103,7 +2103,9 @@
                     e.stopPropagation();
                     if (this.inHelicopter) {
                         isAscending = true;
-                        console.log('🚁 Ascending...');
+                        console.log('🚁📱 Mobile: Starting to ascend');
+                    } else {
+                        console.log('🚁📱 Mobile: Not in helicopter, cannot ascend');
                     }
                 };
                 
@@ -2121,7 +2123,9 @@
                     e.stopPropagation();
                     if (this.inHelicopter) {
                         isDescending = true;
-                        console.log('🚁 Descending...');
+                        console.log('🚁📱 Mobile: Starting to descend');
+                    } else {
+                        console.log('🚁📱 Mobile: Not in helicopter, cannot descend');
                     }
                 };
                 
@@ -2157,6 +2161,14 @@
                         
                         // Show/hide altitude controls based on helicopter state
                         altitudeControls.style.display = 'flex';
+                        
+                        // DEBUG: Mobile altitude feedback
+                        if (isAscending) {
+                            console.log(`🚁📱 Mobile ascending: altitude = ${this.helicopterAltitude.toFixed(1)}`);
+                        }
+                        if (isDescending) {
+                            console.log(`🚁📱 Mobile descending: altitude = ${this.helicopterAltitude.toFixed(1)}`);
+                        }
                     } else {
                         altitudeControls.style.display = 'none';
                     }
@@ -2440,11 +2452,13 @@
                 leftEye.material = eyeMaterial;
                 rightEye.material = eyeMaterial;
                 
-                // Store monster data for attack system
+                // Store monster data for attack system and AI movement
                 this.giantMonster = {
                     group: monsterGroup,
                     leftHand: leftHand,
                     rightHand: rightHand,
+                    leftLeg: leftLeg,
+                    rightLeg: rightLeg,
                     position: monsterGroup.position.clone(),
                     attackRange: 50, // Can attack helicopters within 50 units
                     damage: 75, // Massive damage to helicopters
@@ -2452,13 +2466,34 @@
                     attackCooldown: 2000, // 2 second attack cooldown
                     health: 1000, // Super tough boss
                     maxHealth: 1000,
-                    isAttacking: false
+                    isAttacking: false,
+                    // MOVEMENT AND AI SYSTEM
+                    targetPosition: monsterGroup.position.clone(),
+                    movementSpeed: 0.8, // How fast monster moves (slower than player)
+                    chaseRange: 200, // Will chase player within 200 units
+                    climbSpeed: 1.5, // How fast monster climbs buildings
+                    isMoving: false,
+                    isClimbing: false,
+                    currentBuilding: null, // Building monster is currently on/climbing
+                    lastPlayerPosition: new BABYLON.Vector3(0, 0, 0),
+                    chaseUpdateInterval: 1000, // Update chase target every 1 second
+                    lastChaseUpdate: 0,
+                    walkAnimationPhase: 0, // For walking animation
+                    climbAnimationPhase: 0, // For climbing animation
+                    groundLevel: this.groundLevel,
+                    // BUILDING CLIMBING SYSTEM
+                    canClimbBuildings: true,
+                    preferredHeight: 50, // Preferred height to climb to
+                    maxBuildingHeight: 120 // Can climb up to skyscraper height
                 };
                 
                 // Start idle animations
                 this.startMonsterIdleAnimation();
                 
-                console.log('Giant monster created on skyscraper!');
+                // Start monster AI and movement system
+                this.startMonsterAI();
+                
+                console.log('Giant monster created on skyscraper with AI movement!');
                 return this.giantMonster;
             }
             
@@ -2522,6 +2557,237 @@
                 breathingAnimation();
                 headTurnAnimation();
                 eyeGlowAnimation();
+            }
+            
+            startMonsterAI() {
+                if (!this.giantMonster) return;
+                
+                // Monster AI update loop - runs every frame
+                const updateMonsterAI = () => {
+                    if (!this.giantMonster || !this.gameStarted) return;
+                    
+                    const currentTime = Date.now();
+                    
+                    // Update chase target periodically (not every frame for performance)
+                    if (currentTime - this.giantMonster.lastChaseUpdate > this.giantMonster.chaseUpdateInterval) {
+                        this.updateMonsterChaseTarget();
+                        this.giantMonster.lastChaseUpdate = currentTime;
+                    }
+                    
+                    // Update monster movement and animations
+                    this.updateMonsterMovement();
+                    this.updateMonsterAnimations();
+                    
+                    // Continue the AI update loop
+                    requestAnimationFrame(updateMonsterAI);
+                };
+                
+                updateMonsterAI();
+                console.log('🦍 Giant monster AI system started!');
+            }
+            
+            updateMonsterChaseTarget() {
+                if (!this.giantMonster || !this.camera) return;
+                
+                const monster = this.giantMonster;
+                const playerPos = this.camera.position.clone();
+                const monsterPos = monster.group.position.clone();
+                const distance = BABYLON.Vector3.Distance(playerPos, monsterPos);
+                
+                // Only chase if player is within range
+                if (distance <= monster.chaseRange) {
+                    // Update target to player's current position
+                    monster.targetPosition = playerPos.clone();
+                    monster.lastPlayerPosition = playerPos.clone();
+                    monster.isMoving = true;
+                    
+                    console.log(`🦍 Monster chasing player! Distance: ${distance.toFixed(1)} units`);
+                } else {
+                    // Player too far away, return to idle position or patrol
+                    monster.isMoving = false;
+                    console.log(`🦍 Monster lost player (distance: ${distance.toFixed(1)})`);
+                }
+            }
+            
+            updateMonsterMovement() {
+                if (!this.giantMonster || !this.giantMonster.isMoving) return;
+                
+                const monster = this.giantMonster;
+                const currentPos = monster.group.position.clone();
+                const targetPos = monster.targetPosition.clone();
+                
+                // Calculate movement direction (only X and Z, no flying)
+                const direction = targetPos.subtract(currentPos);
+                direction.y = 0; // Monster cannot fly
+                
+                const distance = direction.length();
+                
+                // If close enough to target, stop moving
+                if (distance < 15) {
+                    monster.isMoving = false;
+                    console.log('🦍 Monster reached target position');
+                    return;
+                }
+                
+                // Normalize direction and apply movement speed
+                direction.normalize();
+                const moveVector = direction.scale(monster.movementSpeed);
+                
+                // Check if monster needs to climb buildings
+                const buildingAtTarget = this.getBuildingAtPosition(targetPos);
+                const buildingAtCurrent = this.getBuildingAtPosition(currentPos);
+                
+                if (buildingAtTarget && monster.canClimbBuildings) {
+                    // Need to climb building to reach player
+                    this.startMonsterClimbing(buildingAtTarget);
+                } else if (!buildingAtTarget && buildingAtCurrent) {
+                    // Need to climb down from current building
+                    this.startMonsterDescending();
+                } else {
+                    // Normal ground movement
+                    this.moveMonsterOnGround(moveVector);
+                }
+                
+                // Update monster's position reference
+                monster.position = monster.group.position.clone();
+            }
+            
+            getBuildingAtPosition(position) {
+                // Check if position is near any building
+                for (let building of this.buildings) {
+                    if (!building || !building.position) continue;
+                    
+                    const buildingPos = building.position;
+                    const distance = Math.sqrt(
+                        Math.pow(position.x - buildingPos.x, 2) + 
+                        Math.pow(position.z - buildingPos.z, 2)
+                    );
+                    
+                    // If within building footprint (generous range for monster size)
+                    if (distance < 25) {
+                        return building;
+                    }
+                }
+                return null;
+            }
+            
+            moveMonsterOnGround(moveVector) {
+                if (!this.giantMonster) return;
+                
+                const monster = this.giantMonster;
+                
+                // Move monster horizontally
+                monster.group.position.x += moveVector.x;
+                monster.group.position.z += moveVector.z;
+                
+                // Keep monster on ground level
+                monster.group.position.y = monster.groundLevel + 125; // Monster base height
+                
+                // Rotate monster to face movement direction
+                const angle = Math.atan2(moveVector.x, moveVector.z);
+                monster.group.rotation.y = angle;
+                
+                // Update walking animation
+                monster.walkAnimationPhase += 0.1;
+                
+                console.log(`🦍 Monster walking to: ${monster.group.position.x.toFixed(1)}, ${monster.group.position.z.toFixed(1)}`);
+            }
+            
+            startMonsterClimbing(building) {
+                if (!this.giantMonster || !building) return;
+                
+                const monster = this.giantMonster;
+                monster.isClimbing = true;
+                monster.currentBuilding = building;
+                
+                // Move monster to building position
+                monster.group.position.x = building.position.x;
+                monster.group.position.z = building.position.z;
+                
+                // Determine target height (either building height or player height)
+                let targetHeight = Math.min(building.height || 30, monster.maxBuildingHeight);
+                
+                // If player is in helicopter above building, climb higher
+                if (this.inHelicopter) {
+                    const playerHeight = this.camera.position.y;
+                    targetHeight = Math.min(playerHeight + 20, monster.maxBuildingHeight);
+                }
+                
+                // Animate climbing
+                this.animateMonsterClimbing(targetHeight);
+                
+                console.log(`🦍 Monster climbing ${building.name || 'building'} to height ${targetHeight}`);
+            }
+            
+            animateMonsterClimbing(targetHeight) {
+                if (!this.giantMonster || !this.giantMonster.isClimbing) return;
+                
+                const monster = this.giantMonster;
+                const currentHeight = monster.group.position.y;
+                const climbHeight = monster.groundLevel + 125 + targetHeight;
+                
+                if (currentHeight < climbHeight) {
+                    // Climb up
+                    monster.group.position.y += monster.climbSpeed;
+                    monster.climbAnimationPhase += 0.2;
+                    
+                    // Climbing animation - alternating arm movements
+                    const climbOffset = Math.sin(monster.climbAnimationPhase) * 5;
+                    monster.leftHand.position.y += climbOffset * 0.1;
+                    monster.rightHand.position.y -= climbOffset * 0.1;
+                    
+                    // Continue climbing animation
+                    requestAnimationFrame(() => this.animateMonsterClimbing(targetHeight));
+                } else {
+                    // Reached target height
+                    monster.isClimbing = false;
+                    monster.group.position.y = climbHeight;
+                    console.log('🦍 Monster finished climbing!');
+                }
+            }
+            
+            startMonsterDescending() {
+                if (!this.giantMonster) return;
+                
+                const monster = this.giantMonster;
+                const groundHeight = monster.groundLevel + 125;
+                
+                if (monster.group.position.y > groundHeight) {
+                    // Descend to ground level
+                    monster.group.position.y -= monster.climbSpeed * 1.5; // Faster descent
+                    
+                    if (monster.group.position.y <= groundHeight) {
+                        monster.group.position.y = groundHeight;
+                        monster.isClimbing = false;
+                        monster.currentBuilding = null;
+                        console.log('🦍 Monster reached ground level');
+                    } else {
+                        // Continue descending
+                        requestAnimationFrame(() => this.startMonsterDescending());
+                    }
+                }
+            }
+            
+            updateMonsterAnimations() {
+                if (!this.giantMonster) return;
+                
+                const monster = this.giantMonster;
+                
+                if (monster.isMoving && !monster.isClimbing) {
+                    // Walking animation - sway and leg movement
+                    const walkPhase = monster.walkAnimationPhase;
+                    const sway = Math.sin(walkPhase * 2) * 0.5; // Body sway
+                    const legMotion = Math.sin(walkPhase * 4) * 2; // Leg movement
+                    
+                    // Apply subtle body sway
+                    monster.group.rotation.z = sway * 0.02;
+                    
+                    // Animate leg movement (if legs are accessible)
+                    if (monster.leftLeg && monster.rightLeg) {
+                        monster.leftLeg.rotation.x = legMotion * 0.1;
+                        monster.rightLeg.rotation.x = -legMotion * 0.1;
+                    }
+                }
             }
             
             createRealisticZombie(zombieType = 'normal') {
