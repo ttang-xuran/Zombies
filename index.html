@@ -1799,7 +1799,9 @@
                         this.moveVector.z = -limitedY / maxDistance; // Keep negative Y for forward/back
                     }
                     
-                    console.log('MOVING:', this.moveVector.x.toFixed(2), this.moveVector.z.toFixed(2));
+                    console.log('📱 JOYSTICK MOVING:', this.moveVector.x.toFixed(2), this.moveVector.z.toFixed(2), 
+                               'In Helicopter:', this.inHelicopter ? 'YES' : 'NO',
+                               'Helicopter Available:', this.helicopter ? this.helicopter.available : 'NO HELICOPTER');
                 };
                 
                 const endJoystick = (e) => {
@@ -1843,31 +1845,52 @@
                     
                     // Check for interactions with longer hold
                     interactionTimer = setTimeout(() => {
+                        console.log('📱 FIRE BUTTON LONG PRESS - Checking interactions...');
+                        
                         // Exit helicopter if in helicopter
                         if (this.inHelicopter) {
+                            console.log('📱 Exiting helicopter via fire button');
                             this.exitHelicopter();
                             return;
                         }
                         
                         // Exit car if in car
                         if (this.inCar) {
+                            console.log('📱 Exiting car via fire button');
                             this.exitCar();
                             return;
                         }
                         
                         // Exit building if inside
                         if (this.insideBuilding) {
+                            console.log('📱 Exiting building via fire button');
                             this.exitBuilding();
                             return;
                         }
                         
-                        // Enter helicopter if near one
+                        // Enter helicopter if near one - WITH DEBUGGING
+                        console.log('📱 FIRE BUTTON HELICOPTER CHECK:', {
+                            helicopterExists: !!this.helicopter,
+                            helicopterAvailable: this.helicopter ? this.helicopter.available : 'NO HELICOPTER',
+                            inCar: this.inCar,
+                            inHelicopter: this.inHelicopter,
+                            playerPos: this.camera.position,
+                            helicopterPos: this.helicopter ? this.helicopter.group.position : 'NO HELICOPTER'
+                        });
+                        
                         if (this.helicopter && this.helicopter.available && !this.inCar && !this.inHelicopter) {
                             const helicopterDistance = BABYLON.Vector3.Distance(this.camera.position, this.helicopter.group.position);
+                            console.log('📱 HELICOPTER DISTANCE CHECK:', helicopterDistance, 'Required: < 10');
+                            
                             if (helicopterDistance < 10) {
+                                console.log('✅ ENTERING HELICOPTER VIA FIRE BUTTON!');
                                 this.enterHelicopter();
                                 return;
+                            } else {
+                                console.log('❌ Too far from helicopter:', helicopterDistance);
                             }
+                        } else {
+                            console.log('❌ Helicopter entry conditions not met');
                         }
                         
                         // Enter car if near one
@@ -3763,10 +3786,25 @@
             }
             
             updateWalkingMovement() {
-                if (!this.movementControl) return;
+                if (!this.movementControl) {
+                    console.log('❌ WALKING MOVEMENT - No movementControl system!');
+                    return;
+                }
                 
                 // SMOOTH MOVEMENT SYSTEM - prevents jerky motion that causes dizziness
                 const control = this.movementControl;
+                
+                // DEBUG: iPhone walking movement
+                if (Math.abs(this.moveVector.x) > 0.01 || Math.abs(this.moveVector.z) > 0.01) {
+                    console.log('📱 WALKING DEBUG:', {
+                        moveVector: this.moveVector,
+                        targetVelX: this.moveVector.x * control.maxSpeed,
+                        targetVelZ: this.moveVector.z * control.maxSpeed,
+                        currentVelX: control.currentVelocityX,
+                        currentVelZ: control.currentVelocityZ,
+                        position: this.camera.position
+                    });
+                }
                 
                 // Calculate target velocities based on input
                 control.targetVelocityX = this.moveVector.x * control.maxSpeed;
@@ -3881,10 +3919,15 @@
                 const targetVelX = this.moveVector.x * currentSpeed;
                 const targetVelZ = this.moveVector.z * currentSpeed;
                 
-                // DEBUG: Show helicopter movement input for iPhone debugging
-                if (Math.abs(this.moveVector.x) > 0.1 || Math.abs(this.moveVector.z) > 0.1) {
-                    console.log(`🚁📱 iPhone helicopter movement: x=${this.moveVector.x.toFixed(2)}, z=${this.moveVector.z.toFixed(2)}, speed=${currentSpeed.toFixed(2)}`);
-                }
+                // COMPREHENSIVE iPhone DEBUG - Show ALL helicopter status
+                console.log(`🚁📱 HELICOPTER DEBUG:
+                    📍 Position: ${this.currentHelicopter.group.position.x.toFixed(1)}, ${this.currentHelicopter.group.position.y.toFixed(1)}, ${this.currentHelicopter.group.position.z.toFixed(1)}
+                    🕹️ MoveVector: x=${this.moveVector.x.toFixed(3)}, z=${this.moveVector.z.toFixed(3)}
+                    ⚡ Speed: current=${currentSpeed.toFixed(2)}, base=${baseSpeed}
+                    🎯 Target Velocity: x=${targetVelX.toFixed(3)}, z=${targetVelZ.toFixed(3)}
+                    🏃 Smooth Velocity: x=${smooth.velocityX.toFixed(3)}, z=${smooth.velocityZ.toFixed(3)}
+                    📏 DeadZone: ${deadZone}, Threshold Check: ${Math.abs(smooth.velocityX) > deadZone || Math.abs(smooth.velocityZ) > deadZone}
+                `;
                 
                 // Apply acceleration or deceleration
                 const accelX = (this.moveVector.x !== 0) ? smooth.acceleration : smooth.deceleration;
@@ -4311,7 +4354,17 @@
             }
             
             enterHelicopter() {
-                if (this.inHelicopter || !this.helicopter.available) return;
+                console.log('📱 ATTEMPTING HELICOPTER ENTRY:', {
+                    inHelicopter: this.inHelicopter,
+                    helicopterExists: !!this.helicopter,
+                    helicopterAvailable: this.helicopter ? this.helicopter.available : 'NO HELICOPTER',
+                    playerPosition: this.camera.position
+                });
+                
+                if (this.inHelicopter || !this.helicopter.available) {
+                    console.log('❌ HELICOPTER ENTRY BLOCKED:', this.inHelicopter ? 'Already in helicopter' : 'Helicopter not available');
+                    return;
+                }
                 
                 this.inHelicopter = true;
                 this.currentHelicopter = this.helicopter;
@@ -4340,30 +4393,66 @@
             }
             
             exitHelicopter() {
-                if (!this.inHelicopter) return;
+                console.log('📱 ATTEMPTING HELICOPTER EXIT:', {
+                    inHelicopter: this.inHelicopter,
+                    cameraHeight: this.camera.position.y,
+                    groundLevel: this.groundLevel,
+                    heightCheck: this.camera.position.y > this.groundLevel + 15
+                });
+                
+                if (!this.inHelicopter) {
+                    console.log('❌ Not in helicopter, cannot exit');
+                    return;
+                }
                 
                 // Must be close to ground to exit (allow for minimum safe altitude)
                 if (this.camera.position.y > this.groundLevel + 15) {
+                    console.log('❌ Too high to exit:', this.camera.position.y, 'vs', this.groundLevel + 15);
                     this.showInteractionPrompt('🚁 Lower altitude to exit helicopter! Use ↓ or Shift key.');
                     return;
                 }
+                
+                console.log('✅ Exiting helicopter...');
                 
                 // Position player next to helicopter
                 const exitPos = this.currentHelicopter.group.position.clone();
                 exitPos.x += 8; // Exit to the side
                 exitPos.y = this.groundLevel + this.playerHeight;
+                
+                console.log('📱 EXIT POSITION:', exitPos);
                 this.camera.position = exitPos;
                 
                 this.currentHelicopter.available = true;
                 this.currentHelicopter = null;
                 this.inHelicopter = false;
                 this.helicopterSpeed = 0;
-                this.helicopterAltitude = 3; // Start at safe altitude above zombies
+                this.helicopterAltitude = 3;
+                
+                // RESET MOVEMENT SYSTEM for iPhone
+                this.moveVector = { x: 0, z: 0 };
                 
                 // Stop rotor animation
                 this.helicopter.rotorSpeed = 0;
                 
-                console.log('Exited helicopter!');
+                console.log('✅ Helicopter exit complete! Movement system reset.');
+                
+                // iPhone-specific exit messaging
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                if (isMobile) {
+                    this.showInteractionPrompt('📱 EXITED HELICOPTER: Use joystick to walk, fire to shoot');
+                    
+                    // Test movement system after exit
+                    setTimeout(() => {
+                        console.log('📱 MOVEMENT TEST after exit:', {
+                            moveVector: this.moveVector,
+                            inHelicopter: this.inHelicopter,
+                            inCar: this.inCar,
+                            playerPosition: this.camera.position
+                        });
+                    }, 1000);
+                } else {
+                    this.showInteractionPrompt('Exited helicopter! Use WASD to walk.');
+                }
             }
             
             enterBuilding(building) {
