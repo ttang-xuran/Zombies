@@ -370,6 +370,7 @@
                 
                 // SIMPLE MOBILE INPUT
                 this.moveVector = { x: 0, z: 0 };
+                this.mouseControlsEnabled = false; // Track if mouse controls are active
                 
                 // Ground tracking
                 this.groundLevel = 0;
@@ -1751,8 +1752,11 @@
                 // HELICOPTER ALTITUDE CONTROLS
                 this.setupAltitudeControls();
                 
-                // DESKTOP KEYBOARD CONTROLS
+                // DESKTOP KEYBOARD CONTROLS (includes laptops)
                 this.setupKeyboardControls();
+                
+                // LAPTOP COMPATIBILITY CHECK - Ensure all controls work
+                this.ensureLaptopCompatibility();
             }
             
             setupSimpleJoystick() {
@@ -2182,12 +2186,16 @@
             }
             
             setupKeyboardControls() {
-                // Only enable keyboard controls on desktop/non-mobile devices
+                // Enable keyboard controls on all devices except pure mobile phones/tablets
                 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                if (isMobile) {
-                    console.log('Mobile device detected - skipping keyboard controls');
+                const hasKeyboard = !('ontouchstart' in window) || window.innerWidth > 768; // Assume keyboard if no touch or wide screen
+                
+                if (isMobile && !hasKeyboard) {
+                    console.log('Pure mobile device detected - skipping keyboard controls');
                     return;
                 }
+                
+                console.log('🖱️ Setting up keyboard controls for laptop/desktop');
                 
                 this.keyState = {};
                 
@@ -2334,7 +2342,118 @@
                 
                 document.addEventListener('mousemove', mouseCrosshairHandler);
                 
-                console.log('Desktop keyboard controls enabled');
+                // Add device detection logging for troubleshooting
+                const deviceInfo = {
+                    userAgent: navigator.userAgent,
+                    hasTouch: 'ontouchstart' in window,
+                    screenWidth: window.innerWidth,
+                    platform: navigator.platform,
+                    maxTouchPoints: navigator.maxTouchPoints || 0
+                };
+                
+                console.log('🖱️ Device Info:', deviceInfo);
+                console.log('✅ Keyboard + mouse controls enabled for laptop/desktop');
+            }
+            
+            ensureLaptopCompatibility() {
+                // Special handling for laptops - ensure all controls work
+                const isLaptop = navigator.platform.includes('Win') || navigator.platform.includes('Mac') || navigator.platform.includes('Linux');
+                const hasTouch = 'ontouchstart' in window;
+                const wideScreen = window.innerWidth > 768;
+                
+                if (isLaptop || (hasTouch && wideScreen)) {
+                    console.log('💻 Laptop detected - ensuring full compatibility');
+                    
+                    // Force enable mouse controls if not already set
+                    if (!this.mouseControlsEnabled) {
+                        this.enableMouseControls();
+                    }
+                    
+                    // Add emergency backup controls
+                    this.addBackupControls();
+                    
+                    // Show laptop-specific help
+                    setTimeout(() => {
+                        this.showInteractionPrompt('💻 LAPTOP DETECTED! F=Enter Car/Helicopter, G=Exit, Mouse=Aim');
+                    }, 2000);
+                }
+            }
+            
+            enableMouseControls() {
+                // Backup mouse control system for laptops
+                if (this.mouseControlsEnabled) return;
+                
+                console.log('🖱️ Enabling backup mouse controls for laptop');
+                
+                const backupMouseHandler = (e) => {
+                    if (!this.updateCameraTarget) return;
+                    
+                    // Simple delta calculation
+                    const deltaX = e.movementX || 0;
+                    const deltaY = e.movementY || 0;
+                    
+                    // Apply movement with moderate sensitivity
+                    this.updateCameraTarget(deltaX * 0.5, deltaY * 0.5);
+                    
+                    console.log('🖱️ Backup mouse movement:', deltaX, deltaY);
+                };
+                
+                document.addEventListener('mousemove', backupMouseHandler);
+                this.mouseControlsEnabled = true;
+            }
+            
+            addBackupControls() {
+                // Add keyboard event listeners as backup
+                console.log('⌨️ Adding backup keyboard controls for laptop');
+                
+                const backupKeyHandler = (e) => {
+                    console.log('⌨️ Backup key pressed:', e.code);
+                    
+                    // Backup F key for car/helicopter entry
+                    if (e.code === 'KeyF') {
+                        e.preventDefault();
+                        console.log('🚗 Backup F key - trying to enter vehicle');
+                        
+                        // Try car entry
+                        const nearCar = this.cars?.find(car => car.nearPlayer && car.available);
+                        if (nearCar && !this.inCar && !this.inHelicopter) {
+                            console.log('🚗 Entering car via backup control');
+                            this.enterCar(nearCar);
+                            return;
+                        }
+                        
+                        // Try helicopter entry
+                        if (this.helicopter?.available && !this.inCar && !this.inHelicopter) {
+                            const distance = BABYLON.Vector3.Distance(this.camera.position, this.helicopter.group.position);
+                            if (distance < 10) {
+                                console.log('🚁 Entering helicopter via backup control');
+                                this.enterHelicopter();
+                                return;
+                            }
+                        }
+                        
+                        console.log('❌ No vehicle nearby for backup F key');
+                    }
+                    
+                    // Backup G key for exit
+                    if (e.code === 'KeyG') {
+                        e.preventDefault();
+                        console.log('🚪 Backup G key - trying to exit');
+                        
+                        if (this.inCar) {
+                            console.log('🚗 Exiting car via backup control');
+                            this.exitCar();
+                        } else if (this.inHelicopter) {
+                            console.log('🚁 Exiting helicopter via backup control');
+                            this.exitHelicopter();
+                        } else if (this.insideBuilding) {
+                            console.log('🏢 Exiting building via backup control');
+                            this.exitBuilding();
+                        }
+                    }
+                };
+                
+                document.addEventListener('keydown', backupKeyHandler);
             }
             
             createGiantMonster() {
