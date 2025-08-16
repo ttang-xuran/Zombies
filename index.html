@@ -463,10 +463,10 @@
                     smoothness: 0.8          // Movement smoothness factor
                 };
                 
-                // Start smooth camera update loop
-                this.startSmoothCameraUpdates();
+                // DISABLE COMPLEX SMOOTH CAMERA - Use simple direct control instead
+                // this.startSmoothCameraUpdates();
                 
-                // Add motion comfort controls
+                // Add motion comfort controls  
                 this.setupMotionComfortControls();
                 
                 console.log('🎯 Smooth camera system initialized - dizziness prevention enabled');
@@ -504,10 +504,10 @@
                             break;
                             
                         case '5': // Quick 180-degree turn
-                            this.cameraControl.targetRotationY += Math.PI; // Turn around 180 degrees
-                            this.cameraControl.currentSmoothness = 0.4; // Fast but smooth turn
+                            // DIRECT 180-degree turn without complex systems
+                            this.camera.rotation.y += Math.PI; // Instant turn around
                             this.showInteractionPrompt('🔄 Quick 180° turn!');
-                            console.log('🔄 Quick 180-degree turn activated');
+                            console.log('🔄 Instant 180-degree turn activated');
                             break;
                             
                         case '6': // Decrease turning speed
@@ -2090,8 +2090,16 @@
                 const deltaX = screenX - centerX;
                 const deltaY = screenY - centerY;
                 
-                // SMOOTH CAMERA ROTATION - prevents dizziness
-                this.updateCameraTarget(deltaX, deltaY);
+                // DISABLE COMPLEX CAMERA TARGET SYSTEM - Use direct control instead
+                // this.updateCameraTarget(deltaX, deltaY);
+                
+                // SIMPLE DIRECT MOBILE AIMING - High sensitivity for easy turning
+                const mobileSensitivity = 0.008; // Much higher for easy turning around
+                this.camera.rotation.y += deltaX * mobileSensitivity;  
+                this.camera.rotation.x += deltaY * mobileSensitivity;
+                this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
+                
+                console.log('📱 MOBILE AIM - Direct:', deltaX.toFixed(1), deltaY.toFixed(1));
             }
             
             setupAltitudeControls() {
@@ -2314,33 +2322,40 @@
                 
                 updateKeyboardMovement();
                 
-                // DIRECT MOUSE CROSSHAIR CONTROL - Mouse position = Crosshair position  
-                const mouseCrosshairHandler = (e) => {
-                    // Convert mouse position to camera rotation directly
-                    const centerX = window.innerWidth / 2;
-                    const centerY = window.innerHeight / 2;
+                // ULTRA-SIMPLE MOUSE CONTROL - Direct movement-based aiming for ALL devices
+                let lastMouseX = window.innerWidth / 2;
+                let lastMouseY = window.innerHeight / 2;
+                
+                const universalMouseHandler = (e) => {
+                    // Calculate mouse movement delta (works on all devices)
+                    const currentMouseX = e.clientX;
+                    const currentMouseY = e.clientY;
                     
-                    // Calculate offset from screen center
-                    const offsetX = e.clientX - centerX;
-                    const offsetY = e.clientY - centerY;
+                    const deltaX = currentMouseX - lastMouseX;
+                    const deltaY = currentMouseY - lastMouseY;
                     
-                    // SMOOTH CAMERA AIMING - prevents dizziness from instant snapping
-                    const horizontalRange = window.innerWidth / 2;
-                    const verticalRange = window.innerHeight / 2;
+                    lastMouseX = currentMouseX;
+                    lastMouseY = currentMouseY;
                     
-                    // Convert screen position to smooth camera movement
-                    const targetDeltaX = offsetX / horizontalRange * 100; // Normalize to reasonable range
-                    const targetDeltaY = offsetY / verticalRange * 100;
+                    // Skip tiny movements to prevent jitter
+                    if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) return;
                     
-                    // Update camera smoothly instead of instant assignment
-                    this.updateCameraTarget(targetDeltaX * 0.02, targetDeltaY * 0.02);
+                    // DIRECT CAMERA CONTROL - High sensitivity for easy turning
+                    const sensitivity = 0.008; // Much higher sensitivity for easy turning around
                     
-                    // DEBUG: Show if in car
-                    const carStatus = this.inCar ? ' [IN CAR]' : ' [ON FOOT]';
-                    console.log('🎯 鼠标瞄准' + carStatus + ' - 位置:', e.clientX, e.clientY, '角度:', this.camera.rotation.x.toFixed(3), this.camera.rotation.y.toFixed(3));
+                    // Apply rotation directly to camera
+                    if (this.camera) {
+                        this.camera.rotation.y += deltaX * sensitivity;
+                        this.camera.rotation.x += deltaY * sensitivity;
+                        
+                        // Clamp vertical rotation
+                        this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
+                        
+                        console.log('🎯 DIRECT AIM - Delta:', deltaX.toFixed(1), deltaY.toFixed(1), 'Rotation:', this.camera.rotation.x.toFixed(3), this.camera.rotation.y.toFixed(3));
+                    }
                 };
                 
-                document.addEventListener('mousemove', mouseCrosshairHandler);
+                document.addEventListener('mousemove', universalMouseHandler);
                 
                 // Add device detection logging for troubleshooting
                 const deviceInfo = {
@@ -2392,8 +2407,14 @@
                     const deltaX = e.movementX || 0;
                     const deltaY = e.movementY || 0;
                     
-                    // Apply movement with moderate sensitivity
-                    this.updateCameraTarget(deltaX * 0.5, deltaY * 0.5);
+                    // DISABLE COMPLEX CAMERA TARGET - Use direct control
+                    // this.updateCameraTarget(deltaX * 0.5, deltaY * 0.5);
+                    
+                    // SIMPLE DIRECT CONTROL for laptops - High sensitivity
+                    const laptopSensitivity = 0.012;
+                    this.camera.rotation.y += deltaX * laptopSensitivity;
+                    this.camera.rotation.x += deltaY * laptopSensitivity;
+                    this.camera.rotation.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.camera.rotation.x));
                     
                     console.log('🖱️ Backup mouse movement:', deltaX, deltaY);
                 };
