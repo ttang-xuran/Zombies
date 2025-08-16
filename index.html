@@ -2182,33 +2182,23 @@
                 altitudeDownButton.addEventListener('mousedown', startDescending);
                 altitudeDownButton.addEventListener('mouseup', stopDescending);
                 
-                // Continuous altitude adjustment
+                // ULTRA-SIMPLE altitude adjustment for iPhone
                 const updateAltitude = () => {
                     if (this.inHelicopter) {
                         if (isAscending) {
-                            this.helicopterAltitude += 1.2; // Faster than keyboard
-                            this.helicopterAltitude = Math.min(this.helicopterAltitude, 150); // High enough for skyscraper
+                            this.helicopterAltitude += 2.0; // Fast, responsive altitude control
+                            this.helicopterAltitude = Math.min(this.helicopterAltitude, 150);
+                            console.log(`🚁📱 ASCENDING: altitude = ${this.helicopterAltitude.toFixed(1)}`);
                         }
                         if (isDescending) {
-                            this.helicopterAltitude -= 1.2; // Faster than keyboard  
-                            this.helicopterAltitude = Math.max(this.helicopterAltitude, 1); // Minimum 1 unit above ground for landing
+                            this.helicopterAltitude -= 2.0; // Fast, responsive descent
+                            this.helicopterAltitude = Math.max(this.helicopterAltitude, 1);
+                            console.log(`🚁📱 DESCENDING: altitude = ${this.helicopterAltitude.toFixed(1)}`);
                         }
                         
-                        // Show/hide altitude controls based on helicopter state
+                        // Show altitude controls
                         altitudeControls.style.display = 'flex';
-                        
-                        // DEBUG: Mobile altitude feedback and helicopter state
-                        if (isAscending) {
-                            console.log(`🚁📱 Mobile ascending: altitude = ${this.helicopterAltitude.toFixed(1)}`);
-                        }
-                        if (isDescending) {
-                            console.log(`🚁📱 Mobile descending: altitude = ${this.helicopterAltitude.toFixed(1)}`);
-                        }
-                        
-                        // Visual feedback for iPhone users
-                        if (this.inHelicopter) {
-                            console.log('🚁📱 iPhone: IN HELICOPTER MODE - Altitude controls should be visible');
-                        }
+                        console.log('🚁📱 HELICOPTER MODE ACTIVE - Controls visible');
                     } else {
                         altitudeControls.style.display = 'none';
                     }
@@ -2219,6 +2209,26 @@
                 updateAltitude(); // Start the update loop
                 
                 console.log('🚁 Mobile altitude controls setup complete');
+                
+                // DEBUG: Add global helicopter test function for iPhone debugging
+                window.testHelicopter = () => {
+                    if (this.inHelicopter && this.currentHelicopter) {
+                        console.log('🚁📱 TESTING HELICOPTER MOVEMENT...');
+                        
+                        // Force movement test
+                        this.currentHelicopter.group.position.x += 5;
+                        this.currentHelicopter.group.position.z += 5;
+                        
+                        console.log('🚁📱 HELICOPTER MOVED TO:', this.currentHelicopter.group.position);
+                        console.log('🚁📱 Call testHelicopter() in console to test movement!');
+                        
+                        return 'Helicopter moved! Check position.';
+                    } else {
+                        return 'Not in helicopter. Enter helicopter first.';
+                    }
+                };
+                
+                console.log('🚁📱 DEBUG: Type testHelicopter() in console to force-test movement!');
             }
             
             setupKeyboardControls() {
@@ -3886,103 +3896,54 @@
             }
             
             updateHelicopterMovement() {
-                // SMOOTH HELICOPTER CONTROLS - prevents dizziness from abrupt movements
-                const baseSpeed = 0.8; // Reduced speed for smoother movement
-                const currentSpeed = baseSpeed * (1 + this.helicopterSpeed * 0.3);
+                // ULTRA-SIMPLE HELICOPTER CONTROLS - Direct joystick to movement
+                console.log('🚁📱 ULTRA-SIMPLE HELICOPTER SYSTEM ACTIVE');
                 
-                // Initialize helicopter smooth controls if needed
-                if (!this.currentHelicopter.smoothControl) {
-                    this.currentHelicopter.smoothControl = {
-                        velocityX: 0,
-                        velocityZ: 0,
-                        pitchRotation: 0,
-                        rollRotation: 0,
-                        acceleration: 0.08,
-                        deceleration: 0.15,
-                        rotationSmoothing: 0.1
-                    };
+                // Simple speed setting
+                const helicopterSpeed = 2.0; // Fast, responsive movement
+                
+                // DIRECT JOYSTICK CONTROL - No complex systems
+                if (Math.abs(this.moveVector.x) > 0.01 || Math.abs(this.moveVector.z) > 0.01) {
+                    console.log(`🚁📱 DIRECT HELICOPTER MOVEMENT:
+                        🕹️ Joystick: x=${this.moveVector.x.toFixed(3)}, z=${this.moveVector.z.toFixed(3)}
+                        📍 Before: ${this.currentHelicopter.group.position.x.toFixed(1)}, ${this.currentHelicopter.group.position.z.toFixed(1)}`);
+                    
+                    // DIRECT MOVEMENT - No smooth acceleration, just move!
+                    this.currentHelicopter.group.position.x += this.moveVector.x * helicopterSpeed;
+                    this.currentHelicopter.group.position.z += this.moveVector.z * helicopterSpeed;
+                    
+                    console.log(`📍 After: ${this.currentHelicopter.group.position.x.toFixed(1)}, ${this.currentHelicopter.group.position.z.toFixed(1)}`);
+                    
+                    // Simple helicopter tilting for visual effect
+                    this.currentHelicopter.group.rotation.x = this.moveVector.z * -0.05;
+                    this.currentHelicopter.group.rotation.z = this.moveVector.x * 0.05;
+                } else {
+                    // Return to level flight
+                    this.currentHelicopter.group.rotation.x *= 0.9;
+                    this.currentHelicopter.group.rotation.z *= 0.9;
                 }
                 
-                const smooth = this.currentHelicopter.smoothControl;
-                
-                // Smooth altitude controls (reduced speed to prevent vertigo)
-                if (this.keyState['Space']) {
-                    this.helicopterAltitude += 0.4; // Reduced from 0.8
-                    this.helicopterAltitude = Math.min(this.helicopterAltitude, 150); // High enough for skyscraper (120 units)
+                // SIMPLE altitude controls
+                if (this.keyState && this.keyState['Space']) {
+                    this.helicopterAltitude += 0.8;
+                    this.helicopterAltitude = Math.min(this.helicopterAltitude, 150);
                 }
-                if (this.keyState['ShiftLeft'] || this.keyState['ShiftRight']) {
-                    this.helicopterAltitude -= 0.4; // Reduced from 0.8
+                if (this.keyState && (this.keyState['ShiftLeft'] || this.keyState['ShiftRight'])) {
+                    this.helicopterAltitude -= 0.8;
                     this.helicopterAltitude = Math.max(this.helicopterAltitude, 0);
                 }
                 
-                // Smooth horizontal movement with acceleration/deceleration
-                const targetVelX = this.moveVector.x * currentSpeed;
-                const targetVelZ = this.moveVector.z * currentSpeed;
-                
-                // COMPREHENSIVE iPhone DEBUG - Show ALL helicopter status
-                console.log(`🚁📱 HELICOPTER DEBUG:
-                    📍 Position: ${this.currentHelicopter.group.position.x.toFixed(1)}, ${this.currentHelicopter.group.position.y.toFixed(1)}, ${this.currentHelicopter.group.position.z.toFixed(1)}
-                    🕹️ MoveVector: x=${this.moveVector.x.toFixed(3)}, z=${this.moveVector.z.toFixed(3)}
-                    ⚡ Speed: current=${currentSpeed.toFixed(2)}, base=${baseSpeed}
-                    🎯 Target Velocity: x=${targetVelX.toFixed(3)}, z=${targetVelZ.toFixed(3)}
-                    🏃 Smooth Velocity: x=${smooth.velocityX.toFixed(3)}, z=${smooth.velocityZ.toFixed(3)}
-                    📏 DeadZone: ${deadZone}, Threshold Check: ${Math.abs(smooth.velocityX) > deadZone || Math.abs(smooth.velocityZ) > deadZone}
-                `;
-                
-                // Apply acceleration or deceleration
-                const accelX = (this.moveVector.x !== 0) ? smooth.acceleration : smooth.deceleration;
-                const accelZ = (this.moveVector.z !== 0) ? smooth.acceleration : smooth.deceleration;
-                
-                smooth.velocityX += (targetVelX - smooth.velocityX) * accelX;
-                smooth.velocityZ += (targetVelZ - smooth.velocityZ) * accelZ;
-                
-                // Apply dead zone to prevent tiny oscillations (smaller for iPhone sensitivity)
-                const deadZone = 0.005; // Reduced from 0.01 for better iPhone response
-                if (Math.abs(smooth.velocityX) < deadZone) smooth.velocityX = 0;
-                if (Math.abs(smooth.velocityZ) < deadZone) smooth.velocityZ = 0;
-                
-                // Apply smooth movement (lower threshold for iPhone)
-                if (Math.abs(smooth.velocityX) > deadZone || Math.abs(smooth.velocityZ) > deadZone) {
-                    const forward = this.camera.getForwardRay().direction.clone();
-                    forward.y = 0;
-                    forward.normalize();
-                    const right = BABYLON.Vector3.Cross(BABYLON.Vector3.Up(), forward).normalize();
-                    
-                    const moveDirection = forward.scale(smooth.velocityZ).add(right.scale(smooth.velocityX));
-                    this.currentHelicopter.group.position.addInPlace(moveDirection);
-                    
-                    // Smooth helicopter tilting - much more subtle
-                    const targetPitch = this.moveVector.z * -0.05; // Reduced from -0.1
-                    const targetRoll = this.moveVector.x * 0.05;   // Reduced from 0.1
-                    
-                    smooth.pitchRotation += (targetPitch - smooth.pitchRotation) * smooth.rotationSmoothing;
-                    smooth.rollRotation += (targetRoll - smooth.rollRotation) * smooth.rotationSmoothing;
-                    
-                    this.currentHelicopter.group.rotation.x = smooth.pitchRotation;
-                    this.currentHelicopter.group.rotation.z = smooth.rollRotation;
-                } else {
-                    // Return to level flight when not moving
-                    smooth.pitchRotation += (0 - smooth.pitchRotation) * smooth.rotationSmoothing;
-                    smooth.rollRotation += (0 - smooth.rollRotation) * smooth.rotationSmoothing;
-                    
-                    this.currentHelicopter.group.rotation.x = smooth.pitchRotation;
-                    this.currentHelicopter.group.rotation.z = smooth.rollRotation;
-                }
-                
-                // Smooth helicopter and camera positioning
+                // SIMPLE HELICOPTER POSITIONING
                 const helicopterPos = this.currentHelicopter.group.position.clone();
                 helicopterPos.y = this.groundLevel + 8 + this.helicopterAltitude;
                 this.currentHelicopter.group.position.y = helicopterPos.y;
                 
-                // Smooth camera following with slight lag to reduce motion sickness
-                const cameraPos = helicopterPos.clone();
-                cameraPos.y += 2;
+                // DIRECT camera following - no lag or complex systems
+                this.camera.position.x = helicopterPos.x;
+                this.camera.position.z = helicopterPos.z;
+                this.camera.position.y = helicopterPos.y + 2; // Camera inside cockpit
                 
-                // Smooth camera position interpolation
-                const cameraLag = 0.85; // High value = more lag, smoother following
-                this.camera.position.x += (cameraPos.x - this.camera.position.x) * cameraLag;
-                this.camera.position.z += (cameraPos.z - this.camera.position.z) * cameraLag;
-                this.camera.position.y = cameraPos.y; // Height follows immediately
+                console.log(`🚁📱 HELICOPTER FINAL POSITION: ${helicopterPos.x.toFixed(1)}, ${helicopterPos.y.toFixed(1)}, ${helicopterPos.z.toFixed(1)}`);
                 
                 // Animate rotors
                 if (this.currentHelicopter.rotorSpeed > 0) {
