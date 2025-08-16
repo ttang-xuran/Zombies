@@ -2174,12 +2174,17 @@
                         // Show/hide altitude controls based on helicopter state
                         altitudeControls.style.display = 'flex';
                         
-                        // DEBUG: Mobile altitude feedback
+                        // DEBUG: Mobile altitude feedback and helicopter state
                         if (isAscending) {
                             console.log(`🚁📱 Mobile ascending: altitude = ${this.helicopterAltitude.toFixed(1)}`);
                         }
                         if (isDescending) {
                             console.log(`🚁📱 Mobile descending: altitude = ${this.helicopterAltitude.toFixed(1)}`);
+                        }
+                        
+                        // Visual feedback for iPhone users
+                        if (this.inHelicopter) {
+                            console.log('🚁📱 iPhone: IN HELICOPTER MODE - Altitude controls should be visible');
                         }
                     } else {
                         altitudeControls.style.display = 'none';
@@ -3876,6 +3881,11 @@
                 const targetVelX = this.moveVector.x * currentSpeed;
                 const targetVelZ = this.moveVector.z * currentSpeed;
                 
+                // DEBUG: Show helicopter movement input for iPhone debugging
+                if (Math.abs(this.moveVector.x) > 0.1 || Math.abs(this.moveVector.z) > 0.1) {
+                    console.log(`🚁📱 iPhone helicopter movement: x=${this.moveVector.x.toFixed(2)}, z=${this.moveVector.z.toFixed(2)}, speed=${currentSpeed.toFixed(2)}`);
+                }
+                
                 // Apply acceleration or deceleration
                 const accelX = (this.moveVector.x !== 0) ? smooth.acceleration : smooth.deceleration;
                 const accelZ = (this.moveVector.z !== 0) ? smooth.acceleration : smooth.deceleration;
@@ -3883,12 +3893,13 @@
                 smooth.velocityX += (targetVelX - smooth.velocityX) * accelX;
                 smooth.velocityZ += (targetVelZ - smooth.velocityZ) * accelZ;
                 
-                // Apply dead zone to prevent tiny oscillations
-                if (Math.abs(smooth.velocityX) < 0.01) smooth.velocityX = 0;
-                if (Math.abs(smooth.velocityZ) < 0.01) smooth.velocityZ = 0;
+                // Apply dead zone to prevent tiny oscillations (smaller for iPhone sensitivity)
+                const deadZone = 0.005; // Reduced from 0.01 for better iPhone response
+                if (Math.abs(smooth.velocityX) < deadZone) smooth.velocityX = 0;
+                if (Math.abs(smooth.velocityZ) < deadZone) smooth.velocityZ = 0;
                 
-                // Apply smooth movement
-                if (Math.abs(smooth.velocityX) > 0.01 || Math.abs(smooth.velocityZ) > 0.01) {
+                // Apply smooth movement (lower threshold for iPhone)
+                if (Math.abs(smooth.velocityX) > deadZone || Math.abs(smooth.velocityZ) > deadZone) {
                     const forward = this.camera.getForwardRay().direction.clone();
                     forward.y = 0;
                     forward.normalize();
@@ -4311,8 +4322,21 @@
                 // Start rotor animation
                 this.helicopter.rotorSpeed = 0.2;
                 
-                console.log('🚁 Entered helicopter! Use WASD to fly, Arrow Up/Down for altitude');
-                this.showInteractionPrompt('🚁 HELICOPTER: WASD=Move, ↑↓=Altitude, Space/Shift=Altitude, G=Exit');
+                // iPhone-specific helicopter entry messaging
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                
+                if (isMobile) {
+                    console.log('🚁📱 iPhone: Entered helicopter! Use joystick to fly, ↑↓ buttons for altitude');
+                    this.showInteractionPrompt('🚁📱 HELICOPTER MODE: Joystick=Move, ↑↓=Altitude, Fire=Exit');
+                    
+                    // Add helicopter status to screen for iPhone debugging
+                    setTimeout(() => {
+                        this.showInteractionPrompt(`🚁📱 FLYING: Alt=${this.helicopterAltitude.toFixed(1)} | Move joystick to fly!`);
+                    }, 3000);
+                } else {
+                    console.log('🚁 Entered helicopter! Use WASD to fly, Arrow Up/Down for altitude');
+                    this.showInteractionPrompt('🚁 HELICOPTER: WASD=Move, ↑↓=Altitude, Space/Shift=Altitude, G=Exit');
+                }
             }
             
             exitHelicopter() {
